@@ -33,60 +33,71 @@
 
 /*
   ────────────────────────────────────────────────────────────────
-  floby — design tokens
-  Swap the brand palette here (the --brand-* scale + --primary) to
-  match Figma. Everything else derives from these variables.
+  walky — design tokens (from Figma "floby Питомцы", node 172:639)
+  Brand = warm orange #FA9B27; secondary = cyan #87E5FF; ink #0E0F1E.
+  Swap the --brand-* / --cyan-* scales + --primary here; the rest derives.
   ────────────────────────────────────────────────────────────────
 */
 
 :root {
-  /* Brand scale — floby green (from Figma: logo #23b059, active #00b368) */
-  /* 50 = white so former light-green section/block fills read as clean white;
-     100 kept a soft neutral so icon chips stay visible on white cards. */
-  --brand-50: #ffffff;
-  --brand-100: #eef1ef;
-  --brand-200: #99e4b6;
-  --brand-300: #5fd28e;
-  --brand-400: #2fbd6c;
-  --brand-500: #23b059;
-  --brand-600: #1a9a4c;
-  --brand-700: #167f40;
-  --brand-800: #166536;
-  --brand-900: #13512d;
-  --brand-950: #052b18;
+  /* Brand scale — walky orange (Figma primary #FA9B27) */
+  /* 50/100 = warm peach tints so icon chips + soft fills read on-brand. */
+  --brand-50: #fff5e9;
+  --brand-100: #ffe7c9;
+  --brand-200: #ffd39d;
+  --brand-300: #febb6d;
+  --brand-400: #fba843;
+  --brand-500: #fa9b27;
+  --brand-600: #ef8a10;
+  --brand-700: #c76e0a;
+  --brand-800: #9d570d;
+  --brand-900: #7e470f;
+  --brand-950: #442405;
 
-  /* Bright accent green used for active links (Figma #00b368) */
-  --brand-accent: #00b368;
+  /* Bright accent orange for active links / emphasis */
+  --brand-accent: #f5850b;
 
-  /* Deep ink — Figma text color #090825 */
-  --ink-950: #090825;
-  --ink-900: #14132f;
-  --ink-800: #24233f;
+  /* Secondary — cyan (Figma stats band #87E5FF; buttons a touch deeper) */
+  --cyan-50: #ecfbff;
+  --cyan-100: #d4f5ff;
+  --cyan-200: #aeecff;
+  --cyan-300: #87e5ff;
+  --cyan-400: #52d6f7;
+  --cyan-500: #2cc4ea;
+  --cyan-600: #12a7cf;
+  --cyan-700: #0f85a6;
 
-  /* Semantic tokens (light) — neutral greys (no green tint) */
+  /* Deep ink — Figma text #0E0F1E; 800 = footer dark #2A2A2A */
+  --ink-950: #0e0f1e;
+  --ink-900: #1a1b2b;
+  --ink-800: #2a2a2a;
+
+  /* Semantic tokens (light) — neutral greys (Figma surface #F3F4F7) */
   --background: #ffffff;
-  --surface: #f6f7f8;
-  --surface-strong: #eef0f2;
-  --foreground: #090825;
-  --muted: #f2f3f4;
-  --muted-foreground: #6b6f7d;
+  --surface: #f3f4f7;
+  --surface-strong: #e8eaee;
+  --foreground: #0e0f1e;
+  --muted: #f3f4f7;
+  --muted-foreground: #6e7079;
   --card: #ffffff;
-  --card-foreground: #090825;
+  --card-foreground: #0e0f1e;
   --popover: #ffffff;
-  --popover-foreground: #090825;
+  --popover-foreground: #0e0f1e;
 
   --primary: var(--brand-500);
   --primary-hover: var(--brand-600);
   --primary-foreground: #ffffff;
 
-  --secondary: #eef0f2;
-  --secondary-foreground: #165c34;
+  /* Secondary = cyan pill buttons (Войти / Telegram / CTA) */
+  --secondary: var(--cyan-300);
+  --secondary-hover: var(--cyan-400);
+  --secondary-foreground: #0e0f1e;
 
   --accent: var(--brand-50);
   --accent-foreground: var(--brand-800);
 
-  --border: #e5e7eb;
-  --input: #e5e7eb;
+  --border: #e1e1e1;
+  --input: #e1e1e1;
   --ring: var(--brand-500);
 
   --success: #16a34a;
@@ -95,10 +106,10 @@
 
   --radius: 1rem;
 
-  --shadow-sm: 0 1px 2px 0 rgb(10 20 13 / 0.05);
-  --shadow-md: 0 8px 24px -8px rgb(10 20 13 / 0.12);
-  --shadow-lg: 0 24px 60px -20px rgb(10 20 13 / 0.2);
-  --shadow-brand: 0 18px 40px -14px rgb(30 174 84 / 0.4);
+  --shadow-sm: 0 1px 2px 0 rgb(14 15 30 / 0.05);
+  --shadow-md: 0 8px 24px -8px rgb(14 15 30 / 0.12);
+  --shadow-lg: 0 24px 60px -20px rgb(14 15 30 / 0.18);
+  --shadow-brand: 0 18px 40px -14px rgb(250 155 39 / 0.4);
 }
 
 .dark {
@@ -144,6 +155,7 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -173,13 +185,22 @@
   --color-brand-950: var(--brand-950);
   --color-brand-accent: var(--brand-accent);
 
+  --color-cyan-50: var(--cyan-50);
+  --color-cyan-100: var(--cyan-100);
+  --color-cyan-200: var(--cyan-200);
+  --color-cyan-300: var(--cyan-300);
+  --color-cyan-400: var(--cyan-400);
+  --color-cyan-500: var(--cyan-500);
+  --color-cyan-600: var(--cyan-600);
+  --color-cyan-700: var(--cyan-700);
+
   /* Body — Raleway, with digits mapped to Involve (uniform width, no jump) */
   --font-sans: "InvolveNum", var(--font-raleway), ui-sans-serif, system-ui,
     -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   /* Headings & nav — Involve (already uniform digits), Raleway Cyrillic fallback */
   --font-display: var(--font-involve), "InvolveNum", var(--font-raleway),
     ui-sans-serif, system-ui, sans-serif;
-  --font-logo: var(--font-belanosima), var(--font-involve), sans-serif;
+  --font-logo: var(--font-involve), "InvolveNum", var(--font-raleway), sans-serif;
 
   --radius-sm: calc(var(--radius) - 0.5rem);
   --radius-md: calc(var(--radius) - 0.25rem);

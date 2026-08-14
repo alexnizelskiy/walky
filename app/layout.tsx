@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
-import { Raleway, Belanosima } from "next/font/google";
+import { Raleway } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { PetHeader } from "@/components/pets/pet-header";
@@ -32,14 +32,6 @@ const involve = localFont({
   display: "swap",
 });
 
-// Logo wordmark — Belanosima
-const belanosima = Belanosima({
-  subsets: ["latin"],
-  variable: "--font-belanosima",
-  display: "swap",
-  weight: ["400", "600", "700"],
-});
-
 export const metadata: Metadata = defaultMetadata;
 
 export const viewport: Viewport = {
@@ -54,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${raleway.variable} ${involve.variable} ${belanosima.variable}`}
+      className={`${raleway.variable} ${involve.variable}`}
       suppressHydrationWarning
     >
       <head>
