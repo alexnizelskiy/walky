@@ -23,9 +23,9 @@ export const metadata: Metadata = buildMetadata({
 });
 
 const services = [
-  { badge: "От 20 мин", title: "Выгулы", desc: "Надёжный выгульщик погуляет и пришлёт отчёт", price: "от 299 ₽", img: "/illustrations/svc-walk.png" },
-  { badge: "От 1 часа", title: "Няня", desc: "Присмотрим за питомцем, пока вас нет дома", price: "от 799 ₽", img: "/illustrations/svc-nanny.png" },
-  { badge: "От 1 суток", title: "Передержка", desc: "Посидим с питомцем у вас или у ситтера", price: "от 1 899 ₽", img: "/illustrations/svc-boarding.png" },
+  { href: "/uslugi/vygul", badge: "От 20 мин", title: "Выгулы", desc: "Надёжный выгульщик погуляет и пришлёт отчёт", price: "от 299 ₽", img: "/illustrations/svc-walk.png" },
+  { href: "/uslugi/nyanya", badge: "От 1 часа", title: "Няня", desc: "Присмотрим за питомцем, пока вас нет дома", price: "от 990 ₽", img: "/illustrations/svc-nanny.png" },
+  { href: "/uslugi/peredergka", badge: "От 1 суток", title: "Передержка", desc: "Посидим с питомцем у вас или у ситтера", price: "от 1 899 ₽", img: "/illustrations/svc-boarding.png" },
 ];
 
 const stats = [
@@ -77,7 +77,7 @@ export default function Home() {
           {services.map((s) => (
             <Link
               key={s.title}
-              href="/order"
+              href={s.href}
               className="group flex flex-col overflow-hidden rounded-3xl bg-surface p-6 transition-shadow hover:shadow-[0_20px_50px_-20px_rgba(14,15,30,0.25)]"
             >
               <span className="w-fit rounded-full bg-white px-3 py-1 text-xs font-semibold text-muted-foreground">{s.badge}</span>
