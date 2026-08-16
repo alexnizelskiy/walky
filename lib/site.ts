@@ -11,7 +11,7 @@ export const siteConfig = {
     "walky — выгул собак, няня и передержка в Ростове-на-Дону. Проверенные выгульщики, фотоотчёт с каждой прогулки, страховка и забота о питомце как о своём.",
   url: "https://walky.su",
   locale: "ru_RU",
-  themeColor: "#23b059",
+  themeColor: "#fa9b27",
 
   // — Контакты —
   contacts: {

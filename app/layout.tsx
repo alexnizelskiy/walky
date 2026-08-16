@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
 import { Raleway } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { PetHeader } from "@/components/pets/pet-header";
+import { PetFooter } from "@/components/pets/pet-footer";
 import { ThemeScript } from "@/components/theme/theme-toggle";
 import { JsonLd } from "@/components/seo/json-ld";
 import { RefCapture } from "@/components/referral/ref-capture";
@@ -59,16 +59,7 @@ export default function RootLayout({
         <AuthProvider>
           <PetHeader />
           <main className="flex-1">{children}</main>
-          <footer className="border-t border-border bg-background">
-            <div className="container-page flex flex-col items-center justify-between gap-3 py-8 text-sm text-muted-foreground md:flex-row">
-              <p>© {new Date().getFullYear()} {siteConfig.name}. Забота о питомцах в {siteConfig.geo.city}.</p>
-              <div className="flex gap-5">
-                <a href={siteConfig.contacts.phoneHref} className="hover:text-foreground">{siteConfig.contacts.phone}</a>
-                <Link href="/requisites" className="hover:text-foreground">Реквизиты</Link>
-                <Link href="/privacy" className="hover:text-foreground">Политика конфиденциальности</Link>
-              </div>
-            </div>
-          </footer>
+          <PetFooter />
         </AuthProvider>
       </body>
     </html>
