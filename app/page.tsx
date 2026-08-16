@@ -28,6 +28,11 @@ const services = [
   { href: "/uslugi/peredergka", badge: "От 1 суток", title: "Передержка", desc: "Посидим с питомцем у вас или у ситтера", price: "от 1 899 ₽", img: "/illustrations/svc-boarding.png" },
 ];
 
+const extraServices = [
+  { href: "/uslugi/kotik", emoji: "🐱", title: "У меня котик!", desc: "Кото-няня и визиты от 15 минут", price: "от 649 ₽" },
+  { href: "/uslugi/dop-uhod", emoji: "🐾", title: "Дополнительный уход", desc: "Ветеринар, зоотовары, уход за питомцем", price: "от 400 ₽" },
+];
+
 const stats = [
   { icon: ShieldCheck, value: "> 500", label: "Проверенных надёжных исполнителей" },
   { icon: Award, value: "> 100 тыс. раз", label: "Погуляли и посидели с вашими питомцами" },
@@ -88,6 +93,25 @@ export default function Home() {
                 <img src={s.img} alt={s.title} className="max-h-52 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
               </div>
               <p className="mt-2 text-2xl font-bold">{s.price}</p>
+            </Link>
+          ))}
+        </div>
+
+        {/* Ещё услуги */}
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          {extraServices.map((s) => (
+            <Link
+              key={s.title}
+              href={s.href}
+              className="group flex items-center gap-4 rounded-3xl bg-surface p-5 transition-shadow hover:shadow-[0_20px_50px_-20px_rgba(14,15,30,0.25)]"
+            >
+              <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white text-3xl">{s.emoji}</span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-bold">{s.title}</h3>
+                <p className="text-sm text-muted-foreground">{s.desc}</p>
+              </div>
+              <span className="shrink-0 text-lg font-bold">{s.price}</span>
+              <ArrowRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
             </Link>
           ))}
         </div>

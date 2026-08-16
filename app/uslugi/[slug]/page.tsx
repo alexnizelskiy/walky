@@ -56,9 +56,13 @@ export default async function ServicePageView({ params }: { params: Promise<{ sl
               Заказать от {s.priceFrom} <ArrowRight className="size-4" />
             </Link>
           </div>
-          <div className="flex justify-center rounded-[2rem] bg-surface p-6 md:p-8">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={s.illustration} alt={s.nav} className="max-h-72 w-auto object-contain" />
+          <div className="flex min-h-[240px] items-center justify-center rounded-[2rem] bg-surface p-6 md:p-8">
+            {s.illustration ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={s.illustration} alt={s.nav} className="max-h-72 w-auto object-contain" />
+            ) : (
+              <span className="text-[7rem] leading-none md:text-[9rem]">{s.emoji}</span>
+            )}
           </div>
         </div>
       </section>
