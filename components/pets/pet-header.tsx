@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 const nav = [
   { label: "Наши услуги", href: "/#tariffs" },
   { label: "О сервисе", href: "/#why" },
-  { label: "Стать выгульщиком или ситтером", href: "/#join" },
+  { label: "Стать выгульщиком или ситтером", href: "/stat-vygulshchikom" },
 ];
 
 export function PetHeader() {
