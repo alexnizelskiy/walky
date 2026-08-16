@@ -1,19 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Star, ArrowRight, BadgeCheck, ShieldCheck, Camera, Route, Check } from "lucide-react";
+import { Star, ArrowRight, ShieldCheck, Check } from "lucide-react";
 import { Accordion } from "@/components/ui/accordion";
 import { JsonLd } from "@/components/seo/json-ld";
 import { faqJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/seo";
 import { servicePages, getServicePage } from "@/content/service-pages";
-
-const benefits = [
-  { icon: BadgeCheck, title: "Проверенные исполнители", desc: "Каждый проходит тестирование по правилам безопасности и обязательную стажировку." },
-  { icon: ShieldCheck, title: "Безопасная амуниция", desc: "Надёжная экипировка, разработанная кинологами. С ней питомец точно в безопасности." },
-  { icon: Camera, title: "Фото и отчёт", desc: "Маршрут на карте и фотоотчёт — вы всегда знаете, что с вашим питомцем." },
-  { icon: Route, title: "Удобные маршруты", desc: "Гуляем в знакомых питомцу местах, по удобному и безопасному маршруту." },
-];
 
 export function generateStaticParams() {
   return servicePages.map((s) => ({ slug: s.slug }));
@@ -84,14 +77,14 @@ export default async function ServicePageView({ params }: { params: Promise<{ sl
       {/* Safety */}
       <section className="container-page mt-16 md:mt-24">
         <div className="text-center">
-          <p className="text-2xl font-bold text-brand-500 md:text-3xl">Главное — безопасность</p>
-          <h2 className="mt-1 text-3xl font-bold md:text-4xl">С нами вы можете не переживать</h2>
+          <p className="text-2xl font-bold text-brand-500 md:text-3xl">Спокойно за питомца</p>
+          <h2 className="mt-1 text-3xl font-bold md:text-4xl">Почему нам можно доверять</h2>
         </div>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {benefits.map((b) => (
+        <div className="mx-auto mt-10 grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {s.safety.map((b) => (
             <div key={b.title} className="rounded-3xl bg-surface p-6">
               <span className="grid size-12 place-items-center rounded-2xl bg-white text-brand-500">
-                <b.icon className="size-6" />
+                <ShieldCheck className="size-6" />
               </span>
               <h3 className="mt-4 text-lg font-bold">{b.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{b.desc}</p>

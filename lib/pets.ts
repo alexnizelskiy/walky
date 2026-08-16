@@ -1,6 +1,7 @@
 /**
  * Dog-walking order model — durations + prices (first walk discounted),
- * behaviour/pet options. Prices are placeholders — adjust walkDurations.
+ * behaviour/pet options. Региональные цены (Ростов-на-Дону) — ~30% ниже
+ * московских. Меняются здесь; мастер заказа и страницы услуг берут отсюда.
  */
 export interface WalkDuration {
   min: number;
@@ -9,12 +10,12 @@ export interface WalkDuration {
 }
 
 export const walkDurations: WalkDuration[] = [
-  { min: 20, price: 890, first: 299 },
-  { min: 45, price: 1090, first: 349 },
-  { min: 60, price: 1290, first: 449 },
-  { min: 90, price: 1490, first: 649 },
-  { min: 120, price: 1690, first: 749 },
-  { min: 180, price: 2190, first: 949 },
+  { min: 20, price: 620, first: 199 },
+  { min: 45, price: 760, first: 249 },
+  { min: 60, price: 890, first: 299 },
+  { min: 90, price: 1040, first: 449 },
+  { min: 120, price: 1180, first: 519 },
+  { min: 180, price: 1530, first: 649 },
 ];
 
 export function walkPrice(min: number, firstWalk: boolean): number {
