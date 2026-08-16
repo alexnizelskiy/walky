@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  Star, PawPrint, ShieldCheck, Award, Camera, Route, ArrowRight, BadgeCheck,
+  Star, ShieldCheck, Award, Camera, Route, ArrowRight, BadgeCheck,
 } from "lucide-react";
 import { Accordion } from "@/components/ui/accordion";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -34,9 +34,9 @@ const extraServices = [
 ];
 
 const stats = [
-  { icon: ShieldCheck, value: "> 500", label: "Проверенных надёжных исполнителей" },
-  { icon: Award, value: "> 100 тыс. раз", label: "Погуляли и посидели с вашими питомцами" },
-  { icon: PawPrint, value: "> 15 000", label: "Довольных питомцев" },
+  { icon: ShieldCheck, value: "50+", label: "Проверенных выгульщиков и ситтеров" },
+  { icon: Award, value: "1 000+", label: "Прогулок и визитов к питомцам" },
+  { icon: Star, value: "4.9", label: "Средняя оценка клиентов" },
 ];
 
 const benefits = [
