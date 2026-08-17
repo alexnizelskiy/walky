@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers";
-import { randomBytes, randomUUID, createHash } from "node:crypto";
+import { randomBytes, randomUUID, createHash, scryptSync, timingSafeEqual } from "node:crypto";
 import { query, queryOne } from "@/lib/db";
 
 const COOKIE = "walky_session";
@@ -212,4 +212,71 @@ export async function upsertUserByOAuth(input: {
   const row = (await queryOne<UserRow>(`SELECT ${USER_COLUMNS} FROM users WHERE id = $1`, [userId])) as UserRow;
   if (await promoteIfAdminEmail(userId, row.email ?? email)) row.role = "admin";
   return { user: rowToUser(row), isNew };
+}
+
+// ─────────────────────────── Email + password ───────────────────────────
+// Stored as "salt:hash" (scrypt). No email verification (MVP): so email/password
+// signup NEVER grants admin — admin only via SMS/OAuth (verified channels).
+
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  const expected = Buffer.from(hash, "hex");
+  const actual = scryptSync(password, salt, 64);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+function normalizeEmail(input: string): string | null {
+  const e = input.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : null;
+}
+
+export type EmailAuthError = "invalid_email" | "weak_password" | "email_taken" | "invalid_credentials";
+
+/** Register a new client by email + password. */
+export async function registerByEmail(
+  emailInput: string,
+  password: string,
+  name: string | null
+): Promise<{ user?: User; error?: EmailAuthError }> {
+  const email = normalizeEmail(emailInput);
+  if (!email) return { error: "invalid_email" };
+  if (!password || password.length < 6) return { error: "weak_password" };
+
+  const existing = await queryOne<{ id: string }>(
+    "SELECT id FROM users WHERE lower(trim(email)) = $1 LIMIT 1",
+    [email]
+  );
+  if (existing) return { error: "email_taken" };
+
+  const id = newId();
+  await query(
+    "INSERT INTO users (id, phone, name, email, password_hash, role) VALUES ($1, NULL, $2, $3, $4, 'client')",
+    [id, name?.trim() || null, email, hashPassword(password)]
+  );
+  return { user: { id, phone: null, name: name?.trim() || null, email, role: "client", avatar: null } };
+}
+
+/** Log in an existing user by email + password. */
+export async function loginByEmail(
+  emailInput: string,
+  password: string
+): Promise<{ user?: User; error?: EmailAuthError }> {
+  const email = normalizeEmail(emailInput);
+  if (!email) return { error: "invalid_email" };
+
+  const row = await queryOne<UserRow & { password_hash: string | null }>(
+    `SELECT ${USER_COLUMNS}, password_hash FROM users WHERE lower(trim(email)) = $1 LIMIT 1`,
+    [email]
+  );
+  if (!row || !row.password_hash || !verifyPassword(password, row.password_hash)) {
+    return { error: "invalid_credentials" };
+  }
+  return { user: rowToUser(row) };
 }

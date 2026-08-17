@@ -153,6 +153,8 @@ ALTER TABLE users ALTER COLUMN phone DROP NOT NULL;
 -- executor payout requisites (manual payouts)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS payout_details TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS inn TEXT;
+-- email + password auth (scrypt hash "salt:hash")
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
 -- welcome promo for new clients (idempotent)
 INSERT INTO promo_codes (id, code, discount_type, value, active, min_order) VALUES ('seed-clean15', 'CLEAN15', 'percent', 15, true, 0) ON CONFLICT (code) DO NOTHING;
 `;
