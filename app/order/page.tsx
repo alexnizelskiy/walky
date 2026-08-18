@@ -10,6 +10,10 @@ import { SmsAuthModal } from "@/features/booking/sms-auth-modal";
 import {
   walkDurations,
   walkPrice,
+  nannyHours,
+  boardingPerDay,
+  draftTotal,
+  serviceMeta,
   petHasOptions,
   accessOptions,
   emptyPetWalkDraft,
@@ -17,15 +21,17 @@ import {
   savePetDraft,
   clearPetDraft,
   type PetWalkDraft,
+  type PetService,
 } from "@/lib/pets";
 
-const STEPS = ["Начало", "Питомец", "Поведение", "Выгул", "Контакты"];
+const SERVICES: PetService[] = ["vygul", "nyanya", "peredergka"];
+
 const MASCOT: Record<number, string> = {
-  0: "Гав! Я помогу подобрать проверенного выгульщика для вашего питомца.",
-  1: "Расскажите про питомца — так мы учтём все нюансы прогулки.",
+  0: "Гав! Я помогу подобрать проверенного специалиста для вашего питомца.",
+  1: "Расскажите про питомца — так мы учтём все нюансы.",
   2: "Теперь про поведение — чтобы всё прошло спокойно и безопасно.",
-  3: "Осталось выбрать длительность и детали выгула.",
-  4: "Последний шаг — ваши контакты, и мы подберём выгульщика.",
+  3: "Осталось выбрать детали услуги.",
+  4: "Последний шаг — ваши контакты, и мы подберём специалиста.",
 };
 
 const inputCls =
@@ -94,7 +100,11 @@ export default function PetOrderWizard() {
 
   React.useEffect(() => {
     const saved = getPetDraft();
-    if (saved) setD({ ...emptyPetWalkDraft, ...saved });
+    const base = saved ? { ...emptyPetWalkDraft, ...saved } : emptyPetWalkDraft;
+    // preselect service from ?service= (from a service page)
+    const param = new URLSearchParams(window.location.search).get("service");
+    const service = (SERVICES as string[]).includes(param ?? "") ? (param as PetService) : base.service;
+    setD({ ...base, service });
     fetch("/api/auth/me").then((r) => r.json()).then((data) => {
       if (data.user) {
         setContact((c) => ({ ...c, name: c.name || data.user.name || "", phone: c.phone || data.user.phone || "" }));
@@ -104,18 +114,30 @@ export default function PetOrderWizard() {
 
   React.useEffect(() => { savePetDraft(d); }, [d]);
 
-  const firstWalk = d.returning === "no";
-  const total = walkPrice(d.walk.durationMin, firstWalk);
+  const service = d.service;
+  const meta = serviceMeta[service];
+  const STEPS = ["Начало", "Питомец", "Поведение", meta.label, "Контакты"];
+  const firstWalk = service === "vygul" && d.returning === "no";
+  const total = draftTotal(d);
 
   const setPet = (patch: Partial<PetWalkDraft["pet"]>) => setD((s) => ({ ...s, pet: { ...s.pet, ...patch } }));
   const setBeh = (patch: Partial<PetWalkDraft["behavior"]>) => setD((s) => ({ ...s, behavior: { ...s.behavior, ...patch } }));
   const setWalk = (patch: Partial<PetWalkDraft["walk"]>) => setD((s) => ({ ...s, walk: { ...s.walk, ...patch } }));
+  const setNanny = (patch: Partial<PetWalkDraft["nanny"]>) => setD((s) => ({ ...s, nanny: { ...s.nanny, ...patch } }));
+  const setBoarding = (patch: Partial<PetWalkDraft["boarding"]>) => setD((s) => ({ ...s, boarding: { ...s.boarding, ...patch } }));
+
+  function summaryLine(): string {
+    if (service === "nyanya") return `Няня · ${d.nanny.hours} ч`;
+    if (service === "peredergka")
+      return `Передержка · ${d.boarding.days} сут${d.boarding.atHome === "home" ? " · у вас дома" : " · у ситтера"}`;
+    return `Выгул ${d.walk.durationMin} мин${firstWalk ? " · первый выгул со скидкой" : ""}`;
+  }
 
   function next() {
     setErr("");
     if (step === 0 && !d.returning) return setErr("Выберите вариант");
     if (step === 1 && !d.pet.name.trim()) return setErr("Укажите кличку питомца");
-    if (step === 3 && !d.walk.durationMin) return setErr("Выберите длительность");
+    if (step === 3 && service === "peredergka" && !d.boarding.atHome) return setErr("Выберите, где будет питомец");
     setStep((s) => Math.min(STEPS.length - 1, s + 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -126,13 +148,17 @@ export default function PetOrderWizard() {
   }
 
   async function submitOrder() {
+    const title = summaryLine();
     const data = {
-      kind: "pet_walk",
-      title: `Выгул ${d.walk.durationMin} мин`,
-      services: [{ id: "pet_walk", title: `Выгул ${d.walk.durationMin} мин`, qty: 1, price: total }],
+      kind: `pet_${service}`,
+      service,
+      title,
+      services: [{ id: `pet_${service}`, title, qty: 1, price: total }],
       pet: d.pet,
       behavior: d.behavior,
-      walk: d.walk,
+      walk: service === "vygul" ? d.walk : undefined,
+      nanny: service === "nyanya" ? d.nanny : undefined,
+      boarding: service === "peredergka" ? d.boarding : undefined,
       firstWalk,
       name: contact.name,
       phone: contact.phone,
@@ -151,7 +177,7 @@ export default function PetOrderWizard() {
     if (!res.ok) throw new Error();
     const { id } = (await res.json()) as { id: string };
     clearPetDraft();
-    // Save the dog profile so it's reused next time and shown in the pet cabinet.
+    // Save the pet profile so it's reused next time and shown in the cabinet.
     fetch("/api/pets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -186,7 +212,6 @@ export default function PetOrderWizard() {
     setSaving(true);
     try {
       if (!user) {
-        // not logged in — verify phone, then submit
         setSaving(false);
         setSmsOpen(true);
         return;
@@ -205,10 +230,32 @@ export default function PetOrderWizard() {
 
   return (
     <div className="container-page py-8 md:py-12">
-      <h1 className="text-center text-3xl font-bold md:text-4xl">Заказать выгул в Ростове-на-Дону</h1>
+      <h1 className="text-center text-3xl font-bold md:text-4xl">Заказать {meta.verb} в Ростове-на-Дону</h1>
+
+      {/* Service switcher */}
+      <div className="mx-auto mt-6 grid max-w-3xl grid-cols-3 gap-2.5">
+        {SERVICES.map((sv) => {
+          const m = serviceMeta[sv];
+          const on = service === sv;
+          return (
+            <button
+              key={sv}
+              type="button"
+              onClick={() => setD((s) => ({ ...s, service: sv }))}
+              aria-pressed={on}
+              className={cn(
+                "flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-sm font-semibold transition-colors",
+                on ? "border-brand-500 bg-brand-50 text-brand-700" : "border-border hover:border-brand-300"
+              )}
+            >
+              <span className="text-lg">{m.emoji}</span> {m.label}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Progress */}
-      <div className="mx-auto mt-6 flex max-w-3xl gap-1.5">
+      <div className="mx-auto mt-5 flex max-w-3xl gap-1.5">
         {STEPS.map((_, i) => (
           <span key={i} className={cn("h-1.5 flex-1 rounded-full", i <= step ? "bg-brand-500" : "bg-surface-strong")} />
         ))}
@@ -230,7 +277,7 @@ export default function PetOrderWizard() {
         <div className="rounded-3xl border border-border bg-card p-5 md:p-7">
           <div className="flex flex-col gap-6">
             {step === 0 && (
-              <Q title="Вы заказывали у нас раньше?">
+              <Q title="Вы заказывали у нас раньше?" hint={service === "vygul" ? "Для новых клиентов — скидка на первый выгул" : undefined}>
                 <Choice
                   value={d.returning ?? ""}
                   onChange={(v) => setD((s) => ({ ...s, returning: v as "yes" | "no" }))}
@@ -303,7 +350,8 @@ export default function PetOrderWizard() {
               </>
             )}
 
-            {step === 3 && (
+            {/* ─── Step 3: service-specific ─── */}
+            {step === 3 && service === "vygul" && (
               <>
                 <Q title="Какая длительность выгула нужна питомцу?" hint="Цена без учёта накопленной скидки и доп. услуг">
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -347,6 +395,77 @@ export default function PetOrderWizard() {
               </>
             )}
 
+            {step === 3 && service === "nyanya" && (
+              <>
+                <Q title="Сколько часов нужна няня?">
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {nannyHours.map((n) => (
+                      <button key={n.h} type="button" onClick={() => setNanny({ hours: n.h })} aria-pressed={d.nanny.hours === n.h}
+                        className={cn("flex items-center justify-between gap-2 rounded-xl border px-4 py-3.5 text-sm font-medium transition-colors", d.nanny.hours === n.h ? "border-brand-500" : "border-border hover:border-brand-300")}>
+                        <span className="flex items-center gap-2.5">
+                          <span className={cn("grid size-5 shrink-0 place-items-center rounded-full border-2", d.nanny.hours === n.h ? "border-brand-500" : "border-input")}>
+                            {d.nanny.hours === n.h && <span className="size-2.5 rounded-full bg-brand-500" />}
+                          </span>
+                          {n.h === 8 ? "Полный день (до 8 ч)" : `${n.h} ч`}
+                        </span>
+                        <span className="text-muted-foreground">{formatPrice(n.price)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </Q>
+                <Q title="Когда нужна няня?" hint="Дата и время, например: 20 июня с 10 до 12">
+                  <textarea className={cn(inputCls, "h-auto py-3")} rows={2} value={d.nanny.schedule} onChange={(e) => setNanny({ schedule: e.target.value })} />
+                </Q>
+                <Q title="Покормить питомца?">
+                  <Choice value={d.nanny.feed} onChange={(v) => setNanny({ feed: v })} options={[{ v: "Да", label: "Да, по графику" }, { v: "Нет", label: "Не нужно" }]} />
+                </Q>
+                <Q title="Как попасть к питомцу?">
+                  <Choice value={d.nanny.access} onChange={(v) => setNanny({ access: v })} options={accessOptions.map((a) => ({ v: a, label: a }))} />
+                </Q>
+                <Q title="Что важно знать няне?">
+                  <textarea className={cn(inputCls, "h-auto py-3")} rows={2} placeholder="Привычки, команды, что можно и нельзя" value={d.nanny.notes} onChange={(e) => setNanny({ notes: e.target.value })} />
+                </Q>
+              </>
+            )}
+
+            {step === 3 && service === "peredergka" && (
+              <>
+                <Q title="Где будет питомец?">
+                  <Choice
+                    value={d.boarding.atHome ?? ""}
+                    onChange={(v) => setBoarding({ atHome: v as "sitter" | "home" })}
+                    options={[
+                      { v: "sitter", label: "У проверенного ситтера" },
+                      { v: "home", label: "У меня дома (ситтер приедет)" },
+                    ]}
+                  />
+                </Q>
+                <Q title="На сколько суток?" hint={`${formatPrice(boardingPerDay(d.boarding.days, d.boarding.atHome === "home"))} за сутки`}>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => setBoarding({ days: Math.max(1, d.boarding.days - 1) })} className="grid size-11 place-items-center rounded-xl border border-border text-xl font-bold hover:border-brand-300">−</button>
+                    <span className="min-w-[4ch] text-center text-2xl font-bold">{d.boarding.days}</span>
+                    <button type="button" onClick={() => setBoarding({ days: Math.min(60, d.boarding.days + 1) })} className="grid size-11 place-items-center rounded-xl border border-border text-xl font-bold hover:border-brand-300">+</button>
+                    <span className="ml-2 text-sm text-muted-foreground">суток</span>
+                  </div>
+                </Q>
+                <Q title="Дата заезда" hint="Можно приблизительно">
+                  <input className={inputCls} placeholder="20.06.2026" value={d.boarding.dateFrom} onChange={(e) => setBoarding({ dateFrom: e.target.value })} />
+                </Q>
+                <Q title="Нужны ли прогулки?">
+                  <Choice value={d.boarding.walk} onChange={(v) => setBoarding({ walk: v })} options={[{ v: "Да", label: "Да, гулять" }, { v: "Нет", label: "Без прогулок" }]} />
+                </Q>
+                <Q title="Кормление">
+                  <Choice value={d.boarding.feed} onChange={(v) => setBoarding({ feed: v })} options={[{ v: "Свой корм", label: "Дам свой корм" }, { v: "Ваш корм", label: "Кормите вашим" }]} />
+                </Q>
+                <Q title="Как попасть к питомцу / передать его?">
+                  <Choice value={d.boarding.access} onChange={(v) => setBoarding({ access: v })} options={accessOptions.map((a) => ({ v: a, label: a }))} />
+                </Q>
+                <Q title="Что важно знать ситтеру?">
+                  <textarea className={cn(inputCls, "h-auto py-3")} rows={2} placeholder="Привычки, режим, особенности здоровья" value={d.boarding.notes} onChange={(e) => setBoarding({ notes: e.target.value })} />
+                </Q>
+              </>
+            )}
+
             {step === 4 && (
               <>
                 <Q title="Как вас зовут?">
@@ -358,7 +477,7 @@ export default function PetOrderWizard() {
                 <Q title="E-mail" hint="Для отчётов и подтверждений">
                   <input type="email" className={inputCls} placeholder="you@mail.ru" value={contact.email} onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))} />
                 </Q>
-                <Q title="Ваш адрес" hint="Куда приехать выгульщику">
+                <Q title="Ваш адрес" hint="Куда приехать специалисту">
                   <input className={inputCls} placeholder="ул. Пушкинская, 10, кв. 5" value={contact.address} onChange={(e) => setContact((c) => ({ ...c, address: e.target.value }))} />
                 </Q>
                 <div className="rounded-xl bg-surface-strong p-4 text-sm">
@@ -366,7 +485,7 @@ export default function PetOrderWizard() {
                     <span className="text-muted-foreground">К оплате</span>
                     <span className="text-2xl font-bold">{formatPrice(total)}</span>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">Выгул {d.walk.durationMin} мин{firstWalk ? " · первый выгул со скидкой" : ""}. Спишем за 24 часа до прогулки.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{summaryLine()}. Спишем перед оказанием услуги.</p>
                 </div>
                 <label className="flex items-start gap-2.5 text-sm">
                   <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 size-4 accent-[var(--primary)]" />

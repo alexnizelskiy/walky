@@ -34,11 +34,43 @@ export const petHasOptions = [
 export const accessOptions = [
   "Дома встретят",
   "Ключи будут в тайном месте",
-  "Передам ключи выгульщику",
-  "Ключи уже у выгульщика",
+  "Передам ключи специалисту",
+  "Ключи уже у специалиста",
 ] as const;
 
+// ─── Услуги ───
+export type PetService = "vygul" | "nyanya" | "peredergka";
+
+export const serviceMeta: Record<PetService, { label: string; emoji: string; verb: string }> = {
+  vygul: { label: "Выгул", emoji: "🦮", verb: "выгул" },
+  nyanya: { label: "Няня", emoji: "🧡", verb: "услуги няни" },
+  peredergka: { label: "Передержка", emoji: "🏠", verb: "передержку" },
+};
+
+// Няня — цена по количеству часов
+export const nannyHours = [
+  { h: 1, price: 690 },
+  { h: 2, price: 1050 },
+  { h: 3, price: 1390 },
+  { h: 4, price: 1750 },
+  { h: 8, price: 2450 },
+];
+export function nannyPrice(hours: number): number {
+  return nannyHours.find((x) => x.h === hours)?.price ?? nannyHours[0].price;
+}
+
+// Передержка — цена за сутки (дешевле при длительном сроке), у ситтера или у вас дома
+export function boardingPerDay(days: number, atHome: boolean): number {
+  if (atHome) return days >= 7 ? 1490 : 1690;
+  return days >= 7 ? 990 : days >= 3 ? 1150 : 1290;
+}
+export function boardingPrice(days: number, atHome: boolean): number {
+  const d = Math.max(1, days);
+  return boardingPerDay(d, atHome) * d;
+}
+
 export interface PetWalkDraft {
+  service: PetService;
   returning: "yes" | "no" | null;
   pet: {
     name: string;
@@ -68,16 +100,42 @@ export interface PetWalkDraft {
     access: string;
     notes: string;
   };
+  nanny: {
+    hours: number;
+    schedule: string;
+    feed: string;
+    access: string;
+    notes: string;
+  };
+  boarding: {
+    days: number;
+    atHome: "sitter" | "home" | null;
+    dateFrom: string;
+    feed: string;
+    walk: string;
+    access: string;
+    notes: string;
+  };
 }
 
 export const emptyPetWalkDraft: PetWalkDraft = {
+  service: "vygul",
   returning: null,
   pet: { name: "", breed: "", gender: null, birthday: "", weight: 10, has: [], clinic: "", hasIllness: null, illnessText: "" },
   behavior: { pullsLeash: "", picksUp: "", canTakeAway: "", aggression: "", offLeash: "", contactDogs: "" },
   walk: { durationMin: 60, frequency: "", schedule: "", feed: "", washPaws: "", access: "", notes: "" },
+  nanny: { hours: 2, schedule: "", feed: "", access: "", notes: "" },
+  boarding: { days: 1, atHome: null, dateFrom: "", feed: "", walk: "", access: "", notes: "" },
 };
 
-const KEY = "floby-pet-walk-draft";
+/** Итоговая цена по услуге и черновику (первый выгул со скидкой). */
+export function draftTotal(d: PetWalkDraft): number {
+  if (d.service === "nyanya") return nannyPrice(d.nanny.hours);
+  if (d.service === "peredergka") return boardingPrice(d.boarding.days, d.boarding.atHome === "home");
+  return walkPrice(d.walk.durationMin, d.returning === "no");
+}
+
+const KEY = "walky-pet-order-draft";
 
 export function savePetDraft(d: PetWalkDraft): void {
   if (typeof window === "undefined") return;

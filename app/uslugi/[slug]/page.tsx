@@ -43,7 +43,7 @@ export default async function ServicePageView({ params }: { params: Promise<{ sl
             <h1 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight md:text-5xl">{s.hero.title}</h1>
             <p className="mt-4 max-w-xl text-lg text-muted-foreground">{s.hero.subtitle}</p>
             <Link
-              href="/order"
+              href={`/order?service=${slug}`}
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-4 text-base font-bold text-white transition-colors hover:bg-brand-600"
             >
               Заказать от {s.priceFrom} <ArrowRight className="size-4" />
@@ -115,7 +115,7 @@ export default async function ServicePageView({ params }: { params: Promise<{ sl
                 ))}
               </ul>
               <Link
-                href="/order"
+                href={`/order?service=${slug}`}
                 className={`mt-6 inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition-colors ${
                   tier.highlight
                     ? "bg-brand-500 text-white hover:bg-brand-600"
@@ -149,7 +149,7 @@ export default async function ServicePageView({ params }: { params: Promise<{ sl
               <h2 className="max-w-xl text-3xl font-bold text-white md:text-4xl">Готовы доверить питомца профессионалам?</h2>
               <p className="mt-4 max-w-md text-lg text-white/85">Оформите заказ — подберём проверенного исполнителя. Первый визит уже завтра.</p>
               <Link
-                href="/order"
+                href={`/order?service=${slug}`}
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-secondary px-8 py-4 text-base font-bold text-secondary-foreground transition-colors hover:bg-secondary-hover"
               >
                 Заказать от {s.priceFrom} <ArrowRight className="size-4" />

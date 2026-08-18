@@ -28,6 +28,7 @@ interface Pet {
 interface WalkBooking {
   id: string;
   kind?: string;
+  title?: string;
   status: string;
   total: number;
   paid: boolean;
@@ -90,7 +91,7 @@ export function PetCabinet() {
       ]);
       setPets(p.ok ? (p.pets as Pet[]) : []);
       setOrders(
-        b.ok ? (b.bookings as WalkBooking[]).filter((x) => x.kind === "pet_walk") : []
+        b.ok ? (b.bookings as WalkBooking[]).filter((x) => x.kind?.startsWith("pet")) : []
       );
     } catch {
       setPets([]);
@@ -152,7 +153,7 @@ export function PetCabinet() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 font-semibold">
                         <Clock className="size-4 text-brand-500" />
-                        Выгул {o.walk?.durationMin ?? "—"} мин
+                        {o.title ?? (o.walk?.durationMin ? `Выгул ${o.walk.durationMin} мин` : "Заказ")}
                       </span>
                       {o.firstWalk && (
                         <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
