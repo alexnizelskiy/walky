@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { PawPrint } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isStaff } from "@/lib/auth";
 import { ProfileLogin } from "@/components/auth/profile-login";
 import { PetCabinet } from "@/components/pets/pet-cabinet";
 
@@ -19,6 +20,9 @@ export default async function PetCabinetPage() {
       </div>
     );
   }
+
+  // staff/admin manage from the panel, not the client pet cabinet
+  if (isStaff(user)) redirect("/admin");
 
   return (
     <div className="container-page py-10 md:py-14">

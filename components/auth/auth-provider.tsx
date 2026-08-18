@@ -39,7 +39,7 @@ export function useRoleFlags() {
   const isStaff = role === "admin" || role === "manager";
   const isExecutor = role === "executor";
   const canOrder = !user || role === "client";
-  const dashboardPath = isStaff || isExecutor ? "/cabinet" : null;
+  const dashboardPath = isStaff ? "/admin" : isExecutor ? "/cabinet" : null;
   return { role, isStaff, isExecutor, canOrder, dashboardPath, loading };
 }
 
