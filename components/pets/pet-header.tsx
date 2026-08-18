@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { User } from "lucide-react";
+import { User, ChevronDown } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
+import { servicePages } from "@/content/service-pages";
 
 const nav = [
-  { label: "Наши услуги", href: "/#tariffs" },
-  { label: "О сервисе", href: "/#why" },
+  { label: "О сервисе", href: "/o-servise" },
   { label: "Стать выгульщиком или ситтером", href: "/stat-vygulshchikom" },
 ];
 
@@ -23,6 +23,35 @@ export function PetHeader() {
           </Link>
 
           <nav className="hidden items-center gap-7 lg:flex">
+            {/* Услуги — выпадающее подменю */}
+            <div className="group relative">
+              <Link
+                href="/#tariffs"
+                className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Наши услуги
+                <ChevronDown className="size-4 transition-transform group-hover:rotate-180" />
+              </Link>
+              {/* invisible bridge + panel keep it open on hover */}
+              <div className="invisible absolute left-1/2 top-full z-10 w-72 -translate-x-1/2 pt-3 opacity-0 transition-all group-hover:visible group-hover:opacity-100">
+                <div className="overflow-hidden rounded-2xl border border-border bg-white p-2 shadow-[0_20px_50px_-20px_rgba(14,15,30,0.3)]">
+                  {servicePages.map((s) => (
+                    <Link
+                      key={s.slug}
+                      href={`/uslugi/${s.slug}`}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-surface"
+                    >
+                      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-lg">{s.emoji}</span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">{s.nav}</span>
+                        <span className="block text-xs text-muted-foreground">от {s.priceFrom}</span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {nav.map((l) => (
               <Link
                 key={l.label}

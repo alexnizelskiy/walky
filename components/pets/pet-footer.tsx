@@ -3,6 +3,7 @@ import { Send, Phone, Mail } from "lucide-react";
 import { siteConfig } from "@/lib/site";
 
 const serviceLinks = [
+  { label: "О сервисе", href: "/o-servise" },
   { label: "Юридическая информация", href: "/requisites" },
   { label: "Политика конфиденциальности", href: "/privacy" },
   { label: "Наши контакты", href: siteConfig.contacts.phoneHref },
