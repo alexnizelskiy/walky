@@ -24,8 +24,9 @@ export interface SitterStep {
 export const sitterSteps: SitterStep[] = [
   {
     title: "О себе",
-    mascot: "Привет! Давай знакомиться. Для начала — пара слов о тебе.",
+    mascot: "Привет! Давай знакомиться. Сначала — кем хочешь работать и пара слов о тебе.",
     fields: [
+      { key: "role", label: "Кем хотите работать?", type: "choice", required: true, options: ["Выгульщик", "Ситтер (няня / передержка)", "И то, и другое"], hint: "Выгул — прогулки; ситтер — няня и передержка" },
       { key: "fullName", label: "Как вас зовут? Укажите ФИО полностью", type: "text", required: true, placeholder: "Иванов Иван Иванович", hint: "Фамилия, имя и отчество" },
       { key: "birthday", label: "Дата рождения", type: "date", placeholder: "дд.мм.гггг" },
     ],
