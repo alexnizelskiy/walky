@@ -81,7 +81,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
       </div>
 
       <div className="mt-6">
-        {tab === "bookings" ? <BookingsTab /> : tab === "applications" ? <ApplicationsTab /> : <UsersTab canEditRoles={isAdmin} />}
+        {tab === "bookings" ? <BookingsTab /> : tab === "applications" ? <ApplicationsTab canApprove={isAdmin} /> : <UsersTab canEditRoles={isAdmin} />}
       </div>
     </div>
   );
@@ -262,9 +262,11 @@ const APP_STATUS: Record<string, { label: string; cls: string }> = {
 };
 const APP_STATUS_ORDER = ["new", "approved", "rejected"];
 
-function ApplicationsTab() {
+function ApplicationsTab({ canApprove }: { canApprove: boolean }) {
   const [apps, setApps] = React.useState<Application[] | null>(null);
   const [open, setOpen] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState<string | null>(null);
+  const [note, setNote] = React.useState<Record<string, string>>({});
 
   const load = React.useCallback(async () => {
     const r = await fetch("/api/sitter-applications").then((r) => r.json()).catch(() => ({ ok: false }));
@@ -280,6 +282,24 @@ function ApplicationsTab() {
       body: JSON.stringify({ status }),
     });
     load();
+  }
+
+  async function approve(id: string) {
+    setBusy(id);
+    try {
+      const r = await fetch(`/api/admin/sitter-applications/${id}/approve`, { method: "POST" })
+        .then((r) => r.json())
+        .catch(() => ({ ok: false }));
+      setNote((n) => ({
+        ...n,
+        [id]: r.ok
+          ? (r.created ? "Создан аккаунт исполнителя. Пусть войдёт по телефону/Яндекс." : "Существующему пользователю выдана роль исполнителя.")
+          : "Не удалось. Проверьте телефон/e-mail в анкете.",
+      }));
+      await load();
+    } finally {
+      setBusy(null);
+    }
   }
 
   if (apps === null) return <div className="h-40 rounded-2xl border border-border bg-card" />;
@@ -332,12 +352,23 @@ function ApplicationsTab() {
                       ))}
                     </select>
                   </label>
+                  {canApprove && (
+                    <button
+                      type="button"
+                      disabled={busy === app.id}
+                      onClick={() => approve(app.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-50"
+                    >
+                      <Check className="size-4" /> {busy === app.id ? "…" : "Одобрить → создать исполнителя"}
+                    </button>
+                  )}
                   {app.phone && (
                     <a href={`tel:${app.phone}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
                       <Phone className="size-4" /> Позвонить
                     </a>
                   )}
                 </div>
+                {note[app.id] && <p className="mt-2 text-sm text-brand-700">{note[app.id]}</p>}
               </div>
             )}
           </div>
