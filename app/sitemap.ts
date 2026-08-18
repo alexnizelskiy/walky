@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPaths = [
     "",
     "/o-servise",
+    "/contacts",
     ...servicePages.map((s) => `/uslugi/${s.slug}`),
     "/stat-vygulshchikom",
     "/order",
