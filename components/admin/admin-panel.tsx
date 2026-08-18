@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { MapPin, Phone, Search, Check } from "lucide-react";
+import { MapPin, Phone, Search, Check, ChevronDown } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
+import { sitterFields } from "@/lib/sitter";
 
 interface Booking {
   id: string;
@@ -53,7 +54,7 @@ function fmtDate(iso: string) {
 }
 
 export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
-  const [tab, setTab] = React.useState<"bookings" | "users">("bookings");
+  const [tab, setTab] = React.useState<"bookings" | "users" | "applications">("bookings");
 
   return (
     <div>
@@ -61,6 +62,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
         {(
           [
             ["bookings", "Заявки"],
+            ["applications", "Анкеты"],
             ["users", "Пользователи"],
           ] as const
         ).map(([id, label]) => (
@@ -78,7 +80,9 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
         ))}
       </div>
 
-      <div className="mt-6">{tab === "bookings" ? <BookingsTab /> : <UsersTab canEditRoles={isAdmin} />}</div>
+      <div className="mt-6">
+        {tab === "bookings" ? <BookingsTab /> : tab === "applications" ? <ApplicationsTab /> : <UsersTab canEditRoles={isAdmin} />}
+      </div>
     </div>
   );
 }
@@ -237,6 +241,108 @@ function UsersTab({ canEditRoles }: { canEditRoles: boolean }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+interface Application {
+  id: string;
+  fullName: string | null;
+  phone: string | null;
+  email: string | null;
+  status: string;
+  createdAt: string;
+  answers: Record<string, string>;
+}
+
+const APP_STATUS: Record<string, { label: string; cls: string }> = {
+  new: { label: "Новая", cls: "bg-warning/15 text-warning-foreground" },
+  approved: { label: "Одобрена", cls: "bg-brand-100 text-brand-700" },
+  rejected: { label: "Отклонена", cls: "bg-surface-strong text-muted-foreground" },
+};
+const APP_STATUS_ORDER = ["new", "approved", "rejected"];
+
+function ApplicationsTab() {
+  const [apps, setApps] = React.useState<Application[] | null>(null);
+  const [open, setOpen] = React.useState<string | null>(null);
+
+  const load = React.useCallback(async () => {
+    const r = await fetch("/api/sitter-applications").then((r) => r.json()).catch(() => ({ ok: false }));
+    setApps(r.ok ? r.applications : []);
+  }, []);
+
+  React.useEffect(() => { load(); }, [load]);
+
+  async function setStatus(id: string, status: string) {
+    await fetch(`/api/admin/sitter-applications/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    load();
+  }
+
+  if (apps === null) return <div className="h-40 rounded-2xl border border-border bg-card" />;
+  if (apps.length === 0) return <p className="rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground">Анкет пока нет.</p>;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {apps.map((app) => {
+        const st = APP_STATUS[app.status] ?? { label: app.status, cls: "bg-surface-strong text-muted-foreground" };
+        const expanded = open === app.id;
+        return (
+          <div key={app.id} className="rounded-2xl border border-border bg-card">
+            <button
+              type="button"
+              onClick={() => setOpen(expanded ? null : app.id)}
+              className="flex w-full flex-wrap items-center justify-between gap-3 p-5 text-left"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold">{app.fullName || "Без имени"}</span>
+                  <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", st.cls)}>{st.label}</span>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {[app.phone, app.email].filter(Boolean).join(" · ") || "—"}
+                </p>
+              </div>
+              <ChevronDown className={cn("size-5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} />
+            </button>
+
+            {expanded && (
+              <div className="border-t border-border p-5">
+                <dl className="flex flex-col gap-3">
+                  {sitterFields.map((f) => {
+                    const v = app.answers[f.key];
+                    if (!v) return null;
+                    return (
+                      <div key={f.key}>
+                        <dt className="text-xs font-semibold text-muted-foreground">{f.label}</dt>
+                        <dd className="mt-0.5 whitespace-pre-wrap text-sm">{v}</dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+                <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border pt-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">Статус</span>
+                    <select className={selectCls} value={app.status} onChange={(e) => setStatus(app.id, e.target.value)}>
+                      {APP_STATUS_ORDER.map((s) => (
+                        <option key={s} value={s}>{APP_STATUS[s].label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {app.phone && (
+                    <a href={`tel:${app.phone}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+                      <Phone className="size-4" /> Позвонить
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

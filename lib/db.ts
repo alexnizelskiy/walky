@@ -155,6 +155,18 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS payout_details TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS inn TEXT;
 -- email + password auth (scrypt hash "salt:hash")
 ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+-- sitter/walker job applications (анкеты сотрудников)
+CREATE TABLE IF NOT EXISTS sitter_applications (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  full_name TEXT,
+  phone TEXT,
+  email TEXT,
+  data JSONB NOT NULL,
+  status TEXT NOT NULL DEFAULT 'new',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS sitter_applications_created_idx ON sitter_applications(created_at DESC);
 -- welcome promo for new clients (idempotent)
 INSERT INTO promo_codes (id, code, discount_type, value, active, min_order) VALUES ('seed-clean15', 'CLEAN15', 'percent', 15, true, 0) ON CONFLICT (code) DO NOTHING;
 `;
@@ -175,7 +187,10 @@ async function createClient(): Promise<Client> {
 
   if (url) {
     const { Pool } = await import("pg");
-    const pool = new Pool({ connectionString: url });
+    // keepAlive + short idle timeout so we don't hold connections Neon has
+    // already dropped (serverless Postgres closes idle links).
+    const pool = new Pool({ connectionString: url, keepAlive: true, idleTimeoutMillis: 10_000, max: 5 });
+    pool.on("error", () => { /* swallow idle-client errors; pool evicts them */ });
     const client: Client = {
       query: (text, params) => pool.query(text, params as unknown[]) as never,
     };
@@ -211,14 +226,35 @@ export function db(): Promise<Client> {
   return g.__flobyDb;
 }
 
-/** Convenience: run a query and get rows. */
+// Transient connection drops (Neon closes idle links): retry once with a fresh
+// pooled connection rather than surfacing ECONNRESET to the request.
+function isConnectionError(err: unknown): boolean {
+  const code = (err as { code?: string })?.code;
+  const msg = String((err as { message?: string })?.message ?? "");
+  return (
+    code === "ECONNRESET" ||
+    code === "EPIPE" ||
+    code === "ETIMEDOUT" ||
+    code === "57P01" || // admin_shutdown
+    /ECONNRESET|Connection terminated|connection closed|server closed the connection/i.test(msg)
+  );
+}
+
+/** Convenience: run a query and get rows (retries once on a dropped connection). */
 export async function query<T = Record<string, unknown>>(
   text: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  const client = await db();
-  const res = await client.query<T>(text, params);
-  return res.rows;
+  try {
+    const client = await db();
+    const res = await client.query<T>(text, params);
+    return res.rows;
+  } catch (err) {
+    if (!isConnectionError(err)) throw err;
+    const client = await db();
+    const res = await client.query<T>(text, params);
+    return res.rows;
+  }
 }
 
 export async function queryOne<T = Record<string, unknown>>(

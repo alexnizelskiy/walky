@@ -67,14 +67,12 @@ export default function BecomeWalkerPage() {
               Проводите время с собаками и кошками, работайте по свободному графику и получайте стабильный доход. Обучим, поддержим и подберём заказы рядом с домом.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href={siteConfig.contacts.telegram}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/stat-vygulshchikom/anketa"
                 className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-4 text-base font-bold text-white transition-colors hover:bg-brand-600"
               >
-                <Send className="size-4" /> Оставить заявку
-              </a>
+                <Send className="size-4" /> Заполнить анкету
+              </Link>
               <a
                 href={siteConfig.contacts.phoneHref}
                 className="inline-flex items-center gap-2 rounded-full bg-secondary px-7 py-4 text-base font-bold text-secondary-foreground transition-colors hover:bg-secondary-hover"
@@ -160,15 +158,13 @@ export default function BecomeWalkerPage() {
           <div className="grid items-center gap-6 md:grid-cols-[1.1fr_0.9fr]">
             <div>
               <h2 className="max-w-xl text-3xl font-bold text-white md:text-4xl">Готовы начать работать с питомцами?</h2>
-              <p className="mt-4 max-w-md text-lg text-white/85">Оставьте заявку — расскажем подробности, ответим на вопросы и пригласим на обучение.</p>
-              <a
-                href={siteConfig.contacts.telegram}
-                target="_blank"
-                rel="noopener noreferrer"
+              <p className="mt-4 max-w-md text-lg text-white/85">Заполните анкету — изучим её, ответим на вопросы и пригласим на обучение.</p>
+              <Link
+                href="/stat-vygulshchikom/anketa"
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-secondary px-8 py-4 text-base font-bold text-secondary-foreground transition-colors hover:bg-secondary-hover"
               >
-                <Send className="size-4" /> Оставить заявку
-              </a>
+                <Send className="size-4" /> Заполнить анкету
+              </Link>
             </div>
             <div className="flex justify-center md:justify-end">
               {/* eslint-disable-next-line @next/next/no-img-element */}
