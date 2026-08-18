@@ -320,6 +320,9 @@ function ApplicationsTab({ canApprove }: { canApprove: boolean }) {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-bold">{app.fullName || "Без имени"}</span>
+                  {app.answers.role && (
+                    <span className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-700">{app.answers.role}</span>
+                  )}
                   <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", st.cls)}>{st.label}</span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
