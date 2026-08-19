@@ -167,6 +167,22 @@ CREATE TABLE IF NOT EXISTS sitter_applications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS sitter_applications_created_idx ON sitter_applications(created_at DESC);
+-- recurring walk subscriptions (абонементы)
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  service TEXT NOT NULL DEFAULT 'vygul',
+  data JSONB NOT NULL,
+  schedule JSONB NOT NULL,
+  amount INT NOT NULL DEFAULT 0,
+  payment_method_id TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  assignee_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  last_run_date DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS subscriptions_user_idx ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS subscriptions_status_idx ON subscriptions(status);
 -- welcome promo for new clients (idempotent)
 INSERT INTO promo_codes (id, code, discount_type, value, active, min_order) VALUES ('seed-clean15', 'CLEAN15', 'percent', 15, true, 0) ON CONFLICT (code) DO NOTHING;
 `;

@@ -22,12 +22,14 @@ export interface CreatedPayment {
   confirmationUrl: string;
 }
 
-/** Create a redirect payment. Returns null when creds are absent (test mode). */
+/** Create a redirect payment. Returns null when creds are absent (test mode).
+ *  Pass savePaymentMethod to remember the card for recurring subscription charges. */
 export async function createPayment(opts: {
   amount: number;
   description: string;
   returnUrl: string;
   metadata?: Record<string, string>;
+  savePaymentMethod?: boolean;
 }): Promise<CreatedPayment | null> {
   const authHeader = auth();
   if (!authHeader) return null;
@@ -45,6 +47,7 @@ export async function createPayment(opts: {
       confirmation: { type: "redirect", return_url: opts.returnUrl },
       description: opts.description,
       metadata: opts.metadata ?? {},
+      ...(opts.savePaymentMethod ? { save_payment_method: true } : {}),
     }),
   });
 
@@ -59,10 +62,48 @@ export async function createPayment(opts: {
   return { id: data.id, confirmationUrl: data.confirmation?.confirmation_url ?? opts.returnUrl };
 }
 
-/** Fetch a payment (to verify status from a webhook). */
+/** Recurring autopayment: charge a previously saved card. No user confirmation. */
+export async function chargeSaved(opts: {
+  paymentMethodId: string;
+  amount: number;
+  description: string;
+  metadata?: Record<string, string>;
+}): Promise<{ id: string; status: string } | null> {
+  const authHeader = auth();
+  if (!authHeader) return null;
+
+  const res = await fetch(`${API}/payments`, {
+    method: "POST",
+    headers: {
+      Authorization: authHeader,
+      "Idempotence-Key": randomUUID(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: { value: opts.amount.toFixed(2), currency: "RUB" },
+      capture: true,
+      payment_method_id: opts.paymentMethodId,
+      description: opts.description,
+      metadata: opts.metadata ?? {},
+    }),
+  });
+  if (!res.ok) {
+    console.error("[walky][yookassa] recurring charge failed:", res.status, await res.text());
+    return null;
+  }
+  const data = (await res.json()) as { id: string; status: string };
+  return { id: data.id, status: data.status };
+}
+
+/** Fetch a payment (to verify status from a webhook, incl. saved payment method). */
 export async function getPayment(
   id: string
-): Promise<{ id: string; status: string; metadata?: { booking_id?: string; gift_id?: string } } | null> {
+): Promise<{
+  id: string;
+  status: string;
+  metadata?: { booking_id?: string; subscription_id?: string };
+  payment_method?: { id?: string; saved?: boolean };
+} | null> {
   const authHeader = auth();
   if (!authHeader) return null;
   const res = await fetch(`${API}/payments/${id}`, { headers: { Authorization: authHeader } });

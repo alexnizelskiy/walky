@@ -44,6 +44,11 @@ export async function notifyOwnerNewBooking(data: BookingData, phone: string, pa
   await sendTelegram(lines.join("\n"));
 }
 
+/** Generic owner Telegram notification (dev → console). */
+export async function notifyOwner(text: string): Promise<void> {
+  await sendTelegram(text);
+}
+
 /** SMS the client when their order status changes. */
 export async function notifyBookingStatus(bookingId: string, status: string): Promise<void> {
   const row = await queryOne<{ data: unknown; phone: string }>(
