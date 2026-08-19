@@ -82,6 +82,7 @@ const behaviorLabels: { key: keyof PetBehavior; label: string }[] = [
 export function PetCabinet() {
   const [pets, setPets] = React.useState<Pet[] | null>(null);
   const [orders, setOrders] = React.useState<WalkBooking[] | null>(null);
+  const [adding, setAdding] = React.useState(false);
 
   const load = React.useCallback(async () => {
     try {
@@ -106,25 +107,37 @@ export function PetCabinet() {
       <section>
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-xl font-bold">Мои питомцы</h2>
-          <Link
-            href="/order"
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
-          >
-            <Plus className="size-4" /> Заказать выгул
-          </Link>
+          {pets && pets.length > 0 && !adding && (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-surface"
+            >
+              <Plus className="size-4" /> Добавить питомца
+            </button>
+          )}
         </div>
 
         {pets === null ? (
           <div className="h-40 rounded-2xl border border-border bg-card" />
+        ) : adding ? (
+          <AddPetForm onDone={() => { setAdding(false); load(); }} onCancel={() => setAdding(false)} />
         ) : pets.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-brand-300 bg-brand-50/50 p-8 text-center">
             <span className="mx-auto grid size-12 place-items-center rounded-full bg-brand-100 text-brand-700">
               <PawPrint className="size-6" />
             </span>
-            <p className="mt-3 font-semibold">Пока нет сохранённых питомцев</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Оформите первый выгул — и профиль питомца сохранится здесь автоматически.
+            <p className="mt-3 font-semibold">Заполните профиль питомца</p>
+            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+              Расскажите о питомце один раз — и при заказе не придётся вводить данные заново. Это займёт минуту.
             </p>
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600"
+            >
+              <Plus className="size-4" /> Добавить питомца
+            </button>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
@@ -340,6 +353,86 @@ function PetCard({ pet, onChanged }: { pet: Pet; onChanged: () => void }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function AddPetForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+  const [form, setForm] = React.useState({
+    name: "", breed: "", gender: "" as "" | "female" | "male", birthday: "", weight: 10, clinic: "",
+  });
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState("");
+  const inputCls = "h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm focus-visible:border-brand-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
+
+  async function save() {
+    if (!form.name.trim()) return setErr("Укажите кличку питомца");
+    setErr("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/pets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, gender: form.gender || null, weight: Number(form.weight) }),
+      });
+      if (!res.ok) throw new Error();
+      onDone();
+    } catch {
+      setErr("Не удалось сохранить. Попробуйте ещё раз.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+      <div className="flex items-center gap-3">
+        <span className="grid size-11 place-items-center rounded-full bg-brand-100 text-2xl">🐶</span>
+        <h3 className="text-lg font-bold">Новый питомец</h3>
+      </div>
+      <div className="mt-4 flex flex-col gap-3">
+        <label className="text-xs font-medium text-muted-foreground">Кличка *
+          <input className={cn(inputCls, "mt-1")} placeholder="Арчи" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+        </label>
+        <label className="text-xs font-medium text-muted-foreground">Порода
+          <input className={cn(inputCls, "mt-1")} placeholder="Хаски" value={form.breed} onChange={(e) => setForm((f) => ({ ...f, breed: e.target.value }))} />
+        </label>
+        <div className="flex gap-2">
+          {(["female", "male"] as const).map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, gender: f.gender === g ? "" : g }))}
+              className={cn(
+                "flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+                form.gender === g ? "border-brand-500" : "border-border hover:border-brand-300"
+              )}
+            >
+              {g === "female" ? "Девочка" : "Мальчик"}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-xs font-medium text-muted-foreground">День рождения
+            <input className={cn(inputCls, "mt-1")} placeholder="10.02.2024" value={form.birthday} onChange={(e) => setForm((f) => ({ ...f, birthday: e.target.value }))} />
+          </label>
+          <label className="text-xs font-medium text-muted-foreground">Вес, кг
+            <input type="number" min={1} max={90} className={cn(inputCls, "mt-1")} value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: Number(e.target.value) }))} />
+          </label>
+        </div>
+        <label className="text-xs font-medium text-muted-foreground">Ветклиника
+          <input className={cn(inputCls, "mt-1")} value={form.clinic} onChange={(e) => setForm((f) => ({ ...f, clinic: e.target.value }))} />
+        </label>
+        {err && <p className="text-sm text-destructive">{err}</p>}
+        <div className="mt-1 flex gap-2">
+          <button type="button" disabled={busy} onClick={save} className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
+            <Check className="size-4" /> {busy ? "Сохраняем…" : "Сохранить питомца"}
+          </button>
+          <button type="button" onClick={onCancel} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-5 py-2.5 text-sm font-semibold hover:bg-surface">
+            <X className="size-4" /> Отмена
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

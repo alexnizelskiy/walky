@@ -7,6 +7,7 @@ import { ArrowRight, ArrowLeft } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import { useAuth, useRoleFlags } from "@/components/auth/auth-provider";
 import { SmsAuthModal } from "@/features/booking/sms-auth-modal";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import {
   walkDurations,
   walkPrice,
@@ -95,8 +96,48 @@ export default function PetOrderWizard() {
   const [contact, setContact] = React.useState({ name: "", phone: "", email: "", address: "" });
   const [consent, setConsent] = React.useState(true);
   const [smsOpen, setSmsOpen] = React.useState(false);
+  const [smsMode, setSmsMode] = React.useState<"login" | "finish">("finish");
+  const [loginPhone, setLoginPhone] = React.useState("");
+  const [prefillNote, setPrefillNote] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [err, setErr] = React.useState("");
+
+  // Pull the returning client's saved pet into the draft (cookie-based, so it
+  // works right after a fresh login without waiting for the auth context).
+  const loadSavedPetIntoDraft = React.useCallback(async () => {
+    try {
+      const r = await fetch("/api/pets").then((x) => x.json());
+      const pets = r.ok ? (r.pets as Array<Record<string, unknown>>) : [];
+      if (pets.length) {
+        const p = pets[0];
+        setD((s) => ({
+          ...s,
+          pet: {
+            name: (p.name as string) || "",
+            breed: (p.breed as string) || "",
+            gender: (p.gender as "female" | "male" | null) ?? null,
+            birthday: (p.birthday as string) || "",
+            weight: (p.weight as number) || 10,
+            has: (p.has as string[]) || [],
+            clinic: (p.clinic as string) || "",
+            hasIllness: p.hasIllness ? "yes" : "no",
+            illnessText: (p.illnessText as string) || "",
+          },
+          behavior: { ...s.behavior, ...((p.behavior as Record<string, string>) || {}) },
+        }));
+        setPrefillNote(`Данные питомца «${p.name}» подставлены — проверьте на следующих шагах.`);
+      } else {
+        setPrefillNote("Профиль питомца ещё не заполнен — укажите данные на следующем шаге.");
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  function onReturningChange(v: "yes" | "no") {
+    setErr("");
+    setPrefillNote("");
+    setD((s) => ({ ...s, returning: v }));
+    if (v === "yes" && user) loadSavedPetIntoDraft();
+  }
 
   React.useEffect(() => {
     const saved = getPetDraft();
@@ -213,11 +254,12 @@ export default function PetOrderWizard() {
     try {
       if (!user) {
         setSaving(false);
+        setSmsMode("finish");
         setSmsOpen(true);
         return;
       }
       const ok = await submitOrder();
-      if (!ok) { setSaving(false); setSmsOpen(true); }
+      if (!ok) { setSaving(false); setSmsMode("finish"); setSmsOpen(true); }
     } catch {
       setSaving(false);
       setErr("Не удалось оформить заказ. Попробуйте ещё раз.");
@@ -277,13 +319,52 @@ export default function PetOrderWizard() {
         <div className="rounded-3xl border border-border bg-card p-5 md:p-7">
           <div className="flex flex-col gap-6">
             {step === 0 && (
-              <Q title="Вы заказывали у нас раньше?" hint={service === "vygul" ? "Для новых клиентов — скидка на первый выгул" : undefined}>
-                <Choice
-                  value={d.returning ?? ""}
-                  onChange={(v) => setD((s) => ({ ...s, returning: v as "yes" | "no" }))}
-                  options={[{ v: "yes", label: "Да" }, { v: "no", label: "Нет" }]}
-                />
-              </Q>
+              <>
+                <Q title="Вы заказывали у нас раньше?" hint={service === "vygul" ? "Для новых клиентов — скидка на первый выгул" : undefined}>
+                  <Choice
+                    value={d.returning ?? ""}
+                    onChange={(v) => onReturningChange(v as "yes" | "no")}
+                    options={[{ v: "yes", label: "Да" }, { v: "no", label: "Нет" }]}
+                  />
+                </Q>
+
+                {/* Returning + not logged in → offer login to reuse saved pet data */}
+                {d.returning === "yes" && !user && (
+                  <div className="rounded-2xl bg-brand-50 p-4">
+                    <p className="text-sm font-bold text-brand-700">Войдите — подставим данные питомца</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Не придётся заполнять анкету заново.</p>
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        className={cn(inputCls, "sm:flex-1")}
+                        placeholder="+7 (___) ___-__-__"
+                        value={loginPhone}
+                        onChange={(e) => setLoginPhone(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (loginPhone.replace(/\D/g, "").length < 10) return setErr("Введите корректный номер");
+                          setErr("");
+                          setSmsMode("login");
+                          setSmsOpen(true);
+                        }}
+                        className="inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-600"
+                      >
+                        Войти
+                      </button>
+                    </div>
+                    <div className="mt-3">
+                      <OAuthButtons onSuccess={() => { refreshAuth(); loadSavedPetIntoDraft(); }} />
+                    </div>
+                  </div>
+                )}
+
+                {prefillNote && (
+                  <p className="rounded-xl border border-brand-200 bg-brand-50 p-3 text-sm text-brand-700">{prefillNote}</p>
+                )}
+              </>
             )}
 
             {step === 1 && (
@@ -521,11 +602,17 @@ export default function PetOrderWizard() {
 
       <SmsAuthModal
         open={smsOpen}
-        phone={contact.phone}
+        phone={smsMode === "login" ? loginPhone : contact.phone}
         onClose={() => setSmsOpen(false)}
         onVerified={async () => {
           setSmsOpen(false);
           refreshAuth();
+          if (smsMode === "login") {
+            // logged in at step 0 — pull saved pet data, stay in the wizard
+            setContact((c) => ({ ...c, phone: c.phone || loginPhone }));
+            await loadSavedPetIntoDraft();
+            return;
+          }
           setSaving(true);
           try { await submitOrder(); } catch { setSaving(false); setErr("Не удалось оформить заказ."); }
         }}
