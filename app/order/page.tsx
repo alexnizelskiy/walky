@@ -99,6 +99,7 @@ export default function PetOrderWizard() {
   const [smsMode, setSmsMode] = React.useState<"login" | "finish">("finish");
   const [loginPhone, setLoginPhone] = React.useState("");
   const [prefillNote, setPrefillNote] = React.useState("");
+  const [petFromProfile, setPetFromProfile] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [err, setErr] = React.useState("");
 
@@ -125,8 +126,10 @@ export default function PetOrderWizard() {
           },
           behavior: { ...s.behavior, ...((p.behavior as Record<string, string>) || {}) },
         }));
-        setPrefillNote(`Данные питомца «${p.name}» подставлены — проверьте на следующих шагах.`);
+        setPetFromProfile(true);
+        setPrefillNote(`Данные питомца «${p.name}» подставлены — осталось выбрать детали услуги.`);
       } else {
+        setPetFromProfile(false);
         setPrefillNote("Профиль питомца ещё не заполнен — укажите данные на следующем шаге.");
       }
     } catch { /* ignore */ }
@@ -135,6 +138,7 @@ export default function PetOrderWizard() {
   function onReturningChange(v: "yes" | "no") {
     setErr("");
     setPrefillNote("");
+    setPetFromProfile(false);
     setD((s) => ({ ...s, returning: v }));
     if (v === "yes" && user) loadSavedPetIntoDraft();
   }
@@ -174,17 +178,23 @@ export default function PetOrderWizard() {
     return `Выгул ${d.walk.durationMin} мин${firstWalk ? " · первый выгул со скидкой" : ""}`;
   }
 
+  // Returning client with a saved profile skips «Питомец» и «Поведение» —
+  // спрашиваем только детали услуги.
+  const flow = petFromProfile ? [0, 3, 4] : [0, 1, 2, 3, 4];
+  const flowIdx = Math.max(0, flow.indexOf(step));
+  const isLastStep = flowIdx === flow.length - 1;
+
   function next() {
     setErr("");
     if (step === 0 && !d.returning) return setErr("Выберите вариант");
     if (step === 1 && !d.pet.name.trim()) return setErr("Укажите кличку питомца");
     if (step === 3 && service === "peredergka" && !d.boarding.atHome) return setErr("Выберите, где будет питомец");
-    setStep((s) => Math.min(STEPS.length - 1, s + 1));
+    setStep(flow[Math.min(flow.length - 1, flowIdx + 1)]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   function back() {
     setErr("");
-    setStep((s) => Math.max(0, s - 1));
+    setStep(flow[Math.max(0, flowIdx - 1)]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -298,8 +308,8 @@ export default function PetOrderWizard() {
 
       {/* Progress */}
       <div className="mx-auto mt-5 flex max-w-3xl gap-1.5">
-        {STEPS.map((_, i) => (
-          <span key={i} className={cn("h-1.5 flex-1 rounded-full", i <= step ? "bg-brand-500" : "bg-surface-strong")} />
+        {flow.map((_, i) => (
+          <span key={i} className={cn("h-1.5 flex-1 rounded-full", i <= flowIdx ? "bg-brand-500" : "bg-surface-strong")} />
         ))}
       </div>
 
@@ -586,7 +596,7 @@ export default function PetOrderWizard() {
                   <ArrowLeft className="size-5" />
                 </button>
               )}
-              {step < STEPS.length - 1 ? (
+              {!isLastStep ? (
                 <button type="button" onClick={next} className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-6 py-3 text-base font-semibold text-white hover:bg-brand-600">
                   Далее <ArrowRight className="size-4" />
                 </button>

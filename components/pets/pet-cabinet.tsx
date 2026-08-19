@@ -6,6 +6,16 @@ import {
   PawPrint, Plus, Trash2, Pencil, Check, X, MapPin, CalendarClock, Clock, Stethoscope, ShieldCheck,
 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
+import { petHasOptions } from "@/lib/pets";
+
+const BEHAVIOR_QUESTIONS: { key: string; label: string; options: string[] }[] = [
+  { key: "pullsLeash", label: "Тянет за поводок?", options: ["Нет", "Иногда", "Сильно"] },
+  { key: "picksUp", label: "Подбирает с земли?", options: ["Нет", "Иногда", "Сильно"] },
+  { key: "canTakeAway", label: "Если подберёт, можно отобрать?", options: ["Нет", "Да", "Будет сложно"] },
+  { key: "aggression", label: "Есть к чему-то агрессия?", options: ["Нет", "Да"] },
+  { key: "offLeash", label: "Можно отпускать без поводка?", options: ["Да", "Нет"] },
+  { key: "contactDogs", label: "Контакт с другими собаками?", options: ["Да", "Нет"] },
+];
 
 interface PetBehavior {
   pullsLeash: string; picksUp: string; canTakeAway: string;
@@ -360,10 +370,14 @@ function PetCard({ pet, onChanged }: { pet: Pet; onChanged: () => void }) {
 function AddPetForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
   const [form, setForm] = React.useState({
     name: "", breed: "", gender: "" as "" | "female" | "male", birthday: "", weight: 10, clinic: "",
+    has: [] as string[], hasIllness: false, illnessText: "",
+    behavior: {} as Record<string, string>,
   });
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState("");
   const inputCls = "h-11 w-full rounded-xl border border-input bg-background px-3.5 text-sm focus-visible:border-brand-400 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
+  const toggleHas = (o: string) => setForm((f) => ({ ...f, has: f.has.includes(o) ? f.has.filter((x) => x !== o) : [...f.has, o] }));
+  const setBeh = (k: string, v: string) => setForm((f) => ({ ...f, behavior: { ...f.behavior, [k]: v } }));
 
   async function save() {
     if (!form.name.trim()) return setErr("Укажите кличку питомца");
@@ -423,6 +437,60 @@ function AddPetForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => 
         <label className="text-xs font-medium text-muted-foreground">Ветклиника
           <input className={cn(inputCls, "mt-1")} value={form.clinic} onChange={(e) => setForm((f) => ({ ...f, clinic: e.target.value }))} />
         </label>
+
+        {/* Что есть у питомца */}
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Что из этого есть у питомца?</p>
+          <div className="mt-1.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+            {petHasOptions.map((o) => {
+              const on = form.has.includes(o);
+              return (
+                <button key={o} type="button" onClick={() => toggleHas(o)}
+                  className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors", on ? "border-brand-500" : "border-border hover:border-brand-300")}>
+                  <span className={cn("grid size-4 shrink-0 place-items-center rounded border-2 text-[10px]", on ? "border-brand-500 bg-brand-500 text-white" : "border-input")}>{on && "✓"}</span>
+                  {o}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Болезни */}
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Есть ли болезни у питомца?</p>
+          <div className="mt-1.5 flex gap-2">
+            {([["no", "Нет"], ["yes", "Да"]] as const).map(([v, label]) => (
+              <button key={v} type="button" onClick={() => setForm((f) => ({ ...f, hasIllness: v === "yes" }))}
+                className={cn("flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors", form.hasIllness === (v === "yes") ? "border-brand-500" : "border-border hover:border-brand-300")}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {form.hasIllness && (
+            <textarea className={cn(inputCls, "mt-2 h-auto py-2")} rows={2} placeholder="Опишите" value={form.illnessText} onChange={(e) => setForm((f) => ({ ...f, illnessText: e.target.value }))} />
+          )}
+        </div>
+
+        {/* Поведение */}
+        <div>
+          <p className="text-xs font-medium text-muted-foreground">Поведение</p>
+          <div className="mt-1.5 flex flex-col gap-2.5">
+            {BEHAVIOR_QUESTIONS.map((q) => (
+              <div key={q.key}>
+                <p className="text-sm">{q.label}</p>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {q.options.map((o) => (
+                    <button key={o} type="button" onClick={() => setBeh(q.key, o)}
+                      className={cn("rounded-lg border px-3 py-1.5 text-sm transition-colors", form.behavior[q.key] === o ? "border-brand-500" : "border-border hover:border-brand-300")}>
+                      {o}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {err && <p className="text-sm text-destructive">{err}</p>}
         <div className="mt-1 flex gap-2">
           <button type="button" disabled={busy} onClick={save} className="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
