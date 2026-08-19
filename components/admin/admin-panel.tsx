@@ -54,7 +54,7 @@ function fmtDate(iso: string) {
 }
 
 export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
-  const [tab, setTab] = React.useState<"bookings" | "users" | "applications">("bookings");
+  const [tab, setTab] = React.useState<"bookings" | "subscriptions" | "users" | "applications">("bookings");
 
   return (
     <div>
@@ -62,6 +62,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
         {(
           [
             ["bookings", "Заявки"],
+            ["subscriptions", "Абонементы"],
             ["applications", "Анкеты"],
             ["users", "Пользователи"],
           ] as const
@@ -81,7 +82,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
       </div>
 
       <div className="mt-6">
-        {tab === "bookings" ? <BookingsTab /> : tab === "applications" ? <ApplicationsTab canApprove={isAdmin} /> : <UsersTab canEditRoles={isAdmin} />}
+        {tab === "bookings" ? <BookingsTab /> : tab === "subscriptions" ? <SubscriptionsTab /> : tab === "applications" ? <ApplicationsTab canApprove={isAdmin} /> : <UsersTab canEditRoles={isAdmin} />}
       </div>
     </div>
   );
@@ -374,6 +375,72 @@ function ApplicationsTab({ canApprove }: { canApprove: boolean }) {
                 {note[app.id] && <p className="mt-2 text-sm text-brand-700">{note[app.id]}</p>}
               </div>
             )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+interface AdminSubscription {
+  id: string;
+  service: string;
+  scheduleLabel: string;
+  amount: number;
+  status: string;
+  hasCard: boolean;
+  petName: string;
+  client: { name: string | null; phone: string | null };
+  assigneeName: string | null;
+  lastRun: string | null;
+}
+
+const SUB_STATUS: Record<string, { label: string; cls: string }> = {
+  active: { label: "Активен", cls: "bg-brand-100 text-brand-700" },
+  paused: { label: "На паузе", cls: "bg-warning/15 text-warning-foreground" },
+  cancelled: { label: "Отменён", cls: "bg-surface-strong text-muted-foreground" },
+};
+
+function SubscriptionsTab() {
+  const [subs, setSubs] = React.useState<AdminSubscription[] | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/admin/subscriptions").then((r) => r.json()).then((d) => setSubs(d.ok ? d.subscriptions : [])).catch(() => setSubs([]));
+  }, []);
+
+  if (subs === null) return <div className="h-40 rounded-2xl border border-border bg-card" />;
+  if (subs.length === 0) return <p className="rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground">Абонементов пока нет.</p>;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {subs.map((s) => {
+        const st = SUB_STATUS[s.status] ?? { label: s.status, cls: "bg-surface-strong text-muted-foreground" };
+        return (
+          <div key={s.id} className="rounded-2xl border border-border bg-card p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-bold">Регулярный выгул{s.petName ? ` · ${s.petName}` : ""}</span>
+                  <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", st.cls)}>{st.label}</span>
+                  <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", s.hasCard ? "bg-cyan-100 text-cyan-700" : "bg-surface-strong text-muted-foreground")}>
+                    {s.hasCard ? "Автосписание" : "Без карты"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {s.scheduleLabel} · {formatPrice(s.amount)}/выгул
+                </p>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {s.client.name || "—"}
+                  {s.client.phone && (
+                    <a href={`tel:${s.client.phone}`} className="ml-2 inline-flex items-center gap-1 text-primary">
+                      <Phone className="size-3.5" /> {s.client.phone}
+                    </a>
+                  )}
+                  {s.assigneeName && <span> · исполнитель: {s.assigneeName}</span>}
+                </p>
+              </div>
+              {s.lastRun && <p className="text-xs text-muted-foreground">Последний выгул: {s.lastRun}</p>}
+            </div>
           </div>
         );
       })}

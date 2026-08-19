@@ -27,6 +27,11 @@ import {
 
 const SERVICES: PetService[] = ["vygul", "nyanya", "peredergka"];
 
+const WEEKDAYS = [
+  { iso: 1, short: "Пн" }, { iso: 2, short: "Вт" }, { iso: 3, short: "Ср" },
+  { iso: 4, short: "Чт" }, { iso: 5, short: "Пт" }, { iso: 6, short: "Сб" }, { iso: 7, short: "Вс" },
+];
+
 const MASCOT: Record<number, string> = {
   0: "Гав! Я помогу подобрать проверенного специалиста для вашего питомца.",
   1: "Расскажите про питомца — так мы учтём все нюансы.",
@@ -245,10 +250,27 @@ export default function PetOrderWizard() {
         behavior: d.behavior,
       }),
     }).catch(() => {});
+
+    // Regular schedule → create a recurring subscription (абонемент)
+    let subscriptionId: string | null = null;
+    if (service === "vygul" && d.walk.frequency === "По расписанию" && d.walk.scheduleDays.length > 0) {
+      const subRes = await fetch("/api/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          service,
+          data,
+          schedule: { days: d.walk.scheduleDays, time: d.walk.scheduleTime },
+          amount: total,
+        }),
+      }).then((r) => r.json()).catch(() => ({ ok: false }));
+      if (subRes.ok) subscriptionId = subRes.id;
+    }
+
     const pay = await fetch("/api/payments/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookingId: id }),
+      body: JSON.stringify({ bookingId: id, subscriptionId }),
     }).then((r) => r.json()).catch(() => ({ ok: false }));
     if (pay.ok && pay.url) { window.location.href = pay.url; return true; }
     router.push("/cabinet");
@@ -466,11 +488,42 @@ export default function PetOrderWizard() {
                   )}
                 </Q>
                 <Q title="Как часто требуются выгулы?">
-                  <Choice value={d.walk.frequency} onChange={(v) => setWalk({ frequency: v })} options={[{ v: "В конкретные даты", label: "В конкретные даты" }, { v: "По расписанию", label: "По постоянному расписанию" }]} />
+                  <Choice value={d.walk.frequency} onChange={(v) => setWalk({ frequency: v })} options={[{ v: "В конкретные даты", label: "В конкретные даты" }, { v: "По расписанию", label: "Регулярно — абонемент" }]} />
                 </Q>
-                <Q title="По какому расписанию надо гулять?" hint="Например, в ПН с 9 до 11 и в ЧТ с 18 до 20">
-                  <textarea className={cn(inputCls, "h-auto py-3")} rows={2} value={d.walk.schedule} onChange={(e) => setWalk({ schedule: e.target.value })} />
-                </Q>
+
+                {d.walk.frequency === "По расписанию" ? (
+                  <>
+                    <Q title="В какие дни гулять?" hint="Отметьте дни недели — будем напоминать и списывать по расписанию">
+                      <div className="flex flex-wrap gap-2">
+                        {WEEKDAYS.map((wd) => {
+                          const on = d.walk.scheduleDays.includes(wd.iso);
+                          return (
+                            <button key={wd.iso} type="button"
+                              onClick={() => setWalk({ scheduleDays: on ? d.walk.scheduleDays.filter((x) => x !== wd.iso) : [...d.walk.scheduleDays, wd.iso] })}
+                              className={cn("size-11 rounded-full border text-sm font-semibold transition-colors", on ? "border-brand-500 bg-brand-500 text-white" : "border-border hover:border-brand-300")}>
+                              {wd.short}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </Q>
+                    <Q title="Во сколько?" hint="Время начала прогулки">
+                      <input type="time" className={cn(inputCls, "max-w-[160px]")} value={d.walk.scheduleTime} onChange={(e) => setWalk({ scheduleTime: e.target.value })} />
+                    </Q>
+                    {d.walk.scheduleDays.length > 0 && (
+                      <div className="rounded-xl border border-brand-200 bg-brand-50 p-3.5 text-sm">
+                        <p className="font-bold text-brand-700">🔁 Это абонемент</p>
+                        <p className="mt-1 text-muted-foreground">
+                          Выгул {d.walk.scheduleDays.length} раз(а) в неделю{d.walk.scheduleTime ? ` в ${d.walk.scheduleTime}` : ""}. Будем напоминать о каждом выгуле{firstWalk ? "" : ` и списывать ${formatPrice(total)} за прогулку`}.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Q title="По каким датам гулять?" hint="Например, 5 и 7 августа">
+                    <textarea className={cn(inputCls, "h-auto py-3")} rows={2} value={d.walk.schedule} onChange={(e) => setWalk({ schedule: e.target.value })} />
+                  </Q>
+                )}
                 <Q title="Покормить после прогулки?">
                   <Choice value={d.walk.feed} onChange={(v) => setWalk({ feed: v })} options={[{ v: "Да", label: "Да" }, { v: "Нет", label: "Нет" }]} />
                 </Q>

@@ -3,10 +3,26 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  PawPrint, Plus, Trash2, Pencil, Check, X, MapPin, CalendarClock, Clock, Stethoscope, ShieldCheck,
+  PawPrint, Plus, Trash2, Pencil, Check, X, MapPin, CalendarClock, Clock, Stethoscope, ShieldCheck, Repeat,
 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
 import { petHasOptions } from "@/lib/pets";
+
+interface Subscription {
+  id: string;
+  service: string;
+  data: { pet?: { name?: string }; walk?: { durationMin?: number } };
+  schedule: { days: number[]; time: string };
+  amount: number;
+  hasCard: boolean;
+  status: string;
+}
+
+const DOW_SHORT = ["", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+function subScheduleLabel(s: { days: number[]; time: string }): string {
+  const days = (s.days ?? []).slice().sort((a, b) => a - b).map((d) => DOW_SHORT[d]).join(", ");
+  return `${days || "—"}${s.time ? ` в ${s.time}` : ""}`;
+}
 
 const BEHAVIOR_QUESTIONS: { key: string; label: string; options: string[] }[] = [
   { key: "pullsLeash", label: "Тянет за поводок?", options: ["Нет", "Иногда", "Сильно"] },
@@ -92,21 +108,25 @@ const behaviorLabels: { key: keyof PetBehavior; label: string }[] = [
 export function PetCabinet() {
   const [pets, setPets] = React.useState<Pet[] | null>(null);
   const [orders, setOrders] = React.useState<WalkBooking[] | null>(null);
+  const [subs, setSubs] = React.useState<Subscription[] | null>(null);
   const [adding, setAdding] = React.useState(false);
 
   const load = React.useCallback(async () => {
     try {
-      const [p, b] = await Promise.all([
+      const [p, b, s] = await Promise.all([
         fetch("/api/pets").then((r) => r.json()),
         fetch("/api/bookings").then((r) => r.json()),
+        fetch("/api/subscriptions").then((r) => r.json()),
       ]);
       setPets(p.ok ? (p.pets as Pet[]) : []);
       setOrders(
         b.ok ? (b.bookings as WalkBooking[]).filter((x) => x.kind?.startsWith("pet")) : []
       );
+      setSubs(s.ok ? (s.subscriptions as Subscription[]).filter((x) => x.status !== "cancelled") : []);
     } catch {
       setPets([]);
       setOrders([]);
+      setSubs([]);
     }
   }, []);
 
@@ -157,6 +177,31 @@ export function PetCabinet() {
           </div>
         )}
       </section>
+
+      {subs && subs.length > 0 && (
+        <section>
+          <h2 className="mb-4 text-xl font-bold">Абонементы</h2>
+          <div className="flex flex-col gap-3">
+            {subs.map((s) => (
+              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-200 bg-brand-50/50 p-5">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 font-bold">
+                    <Repeat className="size-4 text-brand-600" /> Регулярный выгул{s.data.pet?.name ? ` · ${s.data.pet.name}` : ""}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {subScheduleLabel(s.schedule)} · {formatPrice(s.amount)} за выгул
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {s.hasCard ? "Автосписание с карты" : "Оплата за каждый выгул"}
+                    {s.status === "paused" ? " · на паузе" : ""}
+                  </p>
+                </div>
+                <SubActions id={s.id} status={s.status} onChanged={load} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-4 text-xl font-bold">История выгулов</h2>
@@ -501,6 +546,39 @@ function AddPetForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => 
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SubActions({ id, status, onChanged }: { id: string; status: string; onChanged: () => void }) {
+  const [busy, setBusy] = React.useState(false);
+  async function set(next: "paused" | "active" | "cancelled") {
+    setBusy(true);
+    try {
+      await fetch(`/api/subscriptions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+      onChanged();
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="flex shrink-0 gap-2">
+      {status === "active" ? (
+        <button type="button" disabled={busy} onClick={() => set("paused")} className="rounded-xl border border-border bg-white px-4 py-2 text-sm font-semibold transition-colors hover:bg-surface disabled:opacity-50">
+          Пауза
+        </button>
+      ) : (
+        <button type="button" disabled={busy} onClick={() => set("active")} className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-50">
+          Возобновить
+        </button>
+      )}
+      <button type="button" disabled={busy} onClick={() => set("cancelled")} className="rounded-xl border border-border bg-white px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface disabled:opacity-50">
+        Отменить
+      </button>
     </div>
   );
 }

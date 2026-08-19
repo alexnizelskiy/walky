@@ -95,6 +95,8 @@ export interface PetWalkDraft {
     durationMin: number;
     frequency: string;
     schedule: string;
+    scheduleDays: number[]; // ISO 1..7 for a regular subscription
+    scheduleTime: string;   // "HH:MM"
     feed: string;
     washPaws: string;
     access: string;
@@ -123,7 +125,7 @@ export const emptyPetWalkDraft: PetWalkDraft = {
   returning: null,
   pet: { name: "", breed: "", gender: null, birthday: "", weight: 10, has: [], clinic: "", hasIllness: null, illnessText: "" },
   behavior: { pullsLeash: "", picksUp: "", canTakeAway: "", aggression: "", offLeash: "", contactDogs: "" },
-  walk: { durationMin: 60, frequency: "", schedule: "", feed: "", washPaws: "", access: "", notes: "" },
+  walk: { durationMin: 60, frequency: "", schedule: "", scheduleDays: [], scheduleTime: "", feed: "", washPaws: "", access: "", notes: "" },
   nanny: { hours: 2, schedule: "", feed: "", access: "", notes: "" },
   boarding: { days: 1, atHome: null, dateFrom: "", feed: "", walk: "", access: "", notes: "" },
 };
