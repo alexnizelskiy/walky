@@ -1,17 +1,25 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
-import { User, ChevronDown } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { User, ChevronDown, Menu, X } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { servicePages } from "@/content/service-pages";
 
 const nav = [
   { label: "О сервисе", href: "/o-servise" },
   { label: "Стать выгульщиком или ситтером", href: "/stat-vygulshchikom" },
+  { label: "Контакты", href: "/contacts" },
 ];
 
 export function PetHeader() {
   const { user } = useAuth();
+  const [open, setOpen] = React.useState(false);
+  const pathname = usePathname();
+
+  // close the mobile menu on navigation
+  React.useEffect(() => { setOpen(false); }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 pt-3 md:pt-4">
@@ -84,19 +92,67 @@ export function PetHeader() {
             ) : (
               <Link
                 href="/cabinet"
-                className="inline-flex items-center rounded-full bg-secondary px-5 py-2.5 text-sm font-bold text-secondary-foreground transition-colors hover:bg-secondary-hover"
+                className="hidden items-center rounded-full bg-secondary px-5 py-2.5 text-sm font-bold text-secondary-foreground transition-colors hover:bg-secondary-hover sm:inline-flex"
               >
                 Войти
               </Link>
             )}
             <Link
               href="/order"
-              className="inline-flex items-center rounded-full bg-brand-500 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-600"
+              className="inline-flex items-center rounded-full bg-brand-500 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-600 md:px-5"
             >
               Заказать
             </Link>
+            <button
+              type="button"
+              aria-label={open ? "Закрыть меню" : "Открыть меню"}
+              aria-expanded={open}
+              onClick={() => setOpen((v) => !v)}
+              className="grid size-10 shrink-0 place-items-center rounded-full text-foreground transition-colors hover:bg-surface lg:hidden"
+            >
+              {open ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {open && (
+          <div className="mt-2 overflow-hidden rounded-3xl bg-white p-3 shadow-[0_20px_50px_-20px_rgba(14,15,30,0.3)] lg:hidden">
+            <p className="px-2 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Услуги</p>
+            {servicePages.map((s) => (
+              <Link
+                key={s.slug}
+                href={`/uslugi/${s.slug}`}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-lg">{s.emoji}</span>
+                <span className="flex-1 text-sm font-semibold">{s.nav}</span>
+                <span className="text-xs text-muted-foreground">от {s.priceFrom}</span>
+              </Link>
+            ))}
+            <div className="my-2 h-px bg-border" />
+            {nav.map((l) => (
+              <Link
+                key={l.label}
+                href={l.href}
+                onClick={() => setOpen(false)}
+                className="block rounded-xl px-2 py-2.5 text-sm font-semibold transition-colors hover:bg-surface"
+              >
+                {l.label}
+              </Link>
+            ))}
+            {!user && (
+              <Link
+                href="/cabinet"
+                onClick={() => setOpen(false)}
+                className="mt-2 block rounded-xl bg-secondary px-2 py-2.5 text-center text-sm font-bold text-secondary-foreground"
+              >
+                Войти
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

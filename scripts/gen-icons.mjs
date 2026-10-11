@@ -1,42 +1,45 @@
 // One-off generator for PWA / touch icons.
-// Draws a white lowercase "f" monogram on the brand-green field.
-// Run: node scripts/gen-icons.mjs
+// Uses walky's own mascot (extracted from public/walky-logo.svg) on a white
+// rounded field, matching the logo. Run: node scripts/gen-icons.mjs
 import sharp from "sharp";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { readFileSync } from "node:fs";
 
-const BRAND = "#23b059";
-const outDir = join(dirname(fileURLToPath(import.meta.url)), "..", "public");
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const outDir = join(root, "public");
 
-/** SVG for a size-512 canvas. `markScale` shrinks the glyph for maskable safe-zone. */
-function svg({ maskable = false } = {}) {
-  const s = maskable ? 0.8 : 1; // scale glyph around center (256,256)
-  const t = `translate(256 256) scale(${s}) translate(-256 -256)`;
-  // Lowercase "f": curved ear + vertical stem + crossbar. Stroked, round caps.
-  const glyph = `
-    <g transform="${t}" fill="none" stroke="#ffffff" stroke-width="54"
-       stroke-linecap="round" stroke-linejoin="round">
-      <path d="M316 178 C316 150 296 140 272 140 C244 140 232 164 232 198 L232 372" />
-      <path d="M196 236 L300 236" />
-    </g>`;
-  return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-       <rect width="512" height="512" fill="${BRAND}"/>${glyph}
+// Render the logo large, then crop + trim to just the mascot (left square).
+const logo = readFileSync(join(outDir, "walky-logo.svg"));
+const logoPng = await sharp(logo, { density: 2400 }).resize({ width: 2050 }).png().toBuffer(); // 2050x550
+const mascot = await sharp(logoPng)
+  .extract({ left: 6, top: 36, width: 496, height: 496 })
+  .toBuffer();
+
+async function iconBuffer(size, { maskable = false } = {}) {
+  const inner = Math.round(size * (maskable ? 0.64 : 0.78)); // mascot box
+  const m = await sharp(mascot).resize({ height: inner, fit: "inside" }).toBuffer();
+  const meta = await sharp(m).metadata();
+  const bg = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+       <rect width="${size}" height="${size}" rx="${Math.round(size * 0.22)}" fill="#ffffff"/>
      </svg>`
   );
+  return sharp(bg)
+    .composite([{ input: m, top: Math.round((size - (meta.height ?? inner)) / 2), left: Math.round((size - (meta.width ?? inner)) / 2) }])
+    .png()
+    .toBuffer();
 }
 
 const jobs = [
-  { file: "icon-192.png", size: 192, svg: svg() },
-  { file: "icon-512.png", size: 512, svg: svg() },
-  { file: "icon-maskable-512.png", size: 512, svg: svg({ maskable: true }) },
-  { file: "apple-touch-icon.png", size: 180, svg: svg() },
+  { file: "icon-192.png", size: 192 },
+  { file: "icon-512.png", size: 512 },
+  { file: "icon-maskable-512.png", size: 512, maskable: true },
+  { file: "apple-touch-icon.png", size: 180 },
 ];
 
 for (const job of jobs) {
-  await sharp(job.svg)
-    .resize(job.size, job.size)
-    .png()
-    .toFile(join(outDir, job.file));
+  const buf = await iconBuffer(job.size, { maskable: job.maskable });
+  await sharp(buf).toFile(join(outDir, job.file));
   console.log("wrote", job.file);
 }
