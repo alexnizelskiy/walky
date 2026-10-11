@@ -155,6 +155,15 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS payout_details TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS inn TEXT;
 -- email + password auth (scrypt hash "salt:hash")
 ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+-- password reset tokens (sha256 of the emailed token)
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS password_reset_token_idx ON password_reset_tokens(token_hash);
 -- sitter/walker job applications (анкеты сотрудников)
 CREATE TABLE IF NOT EXISTS sitter_applications (
   id TEXT PRIMARY KEY,

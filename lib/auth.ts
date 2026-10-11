@@ -280,3 +280,46 @@ export async function loginByEmail(
   }
   return { user: rowToUser(row) };
 }
+
+// ─────────────────────────── Password reset ───────────────────────────
+
+/** Create a reset token for an email account. Returns the raw token + user
+ *  (for the email link), or null — caller never reveals which to prevent
+ *  account enumeration. */
+export async function requestPasswordReset(emailInput: string): Promise<{ token: string; user: User } | null> {
+  const email = normalizeEmail(emailInput);
+  if (!email) return null;
+  const row = await queryOne<UserRow & { password_hash: string | null }>(
+    `SELECT ${USER_COLUMNS}, password_hash FROM users WHERE lower(trim(email)) = $1 LIMIT 1`,
+    [email]
+  );
+  if (!row || !row.password_hash) return null; // only accounts with a password
+
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  await query("DELETE FROM password_reset_tokens WHERE user_id = $1", [row.id]);
+  await query(
+    "INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at) VALUES ($1, $2, $3, $4)",
+    [newId(), row.id, tokenHash, expires]
+  );
+  return { token, user: rowToUser(row) };
+}
+
+/** Consume a reset token and set a new password. */
+export async function resetPassword(token: string, newPassword: string): Promise<{ ok: true } | { error: EmailAuthError | "invalid_token" }> {
+  if (!newPassword || newPassword.length < 6) return { error: "weak_password" };
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  const row = await queryOne<{ id: string; user_id: string; expires_at: string }>(
+    "SELECT id, user_id, expires_at FROM password_reset_tokens WHERE token_hash = $1",
+    [tokenHash]
+  );
+  if (!row) return { error: "invalid_token" };
+  if (new Date(row.expires_at).getTime() < Date.now()) {
+    await query("DELETE FROM password_reset_tokens WHERE id = $1", [row.id]);
+    return { error: "invalid_token" };
+  }
+  await query("UPDATE users SET password_hash = $2 WHERE id = $1", [row.user_id, hashPassword(newPassword)]);
+  await query("DELETE FROM password_reset_tokens WHERE user_id = $1", [row.user_id]);
+  return { ok: true };
+}

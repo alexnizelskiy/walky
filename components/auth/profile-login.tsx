@@ -116,6 +116,53 @@ function EmailForm({ onDone }: { onDone: () => void }) {
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [forgot, setForgot] = React.useState(false);
+  const [sent, setSent] = React.useState(false);
+
+  async function sendReset(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      await fetch("/api/auth/password/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      setSent(true);
+    } catch {
+      setError("Не удалось отправить. Попробуйте ещё раз.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (forgot) {
+    return (
+      <form onSubmit={sendReset} className="flex w-full flex-col gap-3 text-left">
+        {sent ? (
+          <p className="rounded-xl border border-brand-200 bg-brand-50 p-3 text-sm text-brand-700">
+            Если аккаунт с таким e-mail существует, мы отправили ссылку для сброса пароля. Проверьте почту.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">Введите e-mail — пришлём ссылку для сброса пароля.</p>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="forgot-email">E-mail</Label>
+              <Input id="forgot-email" type="email" inputMode="email" placeholder="you@mail.ru" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" size="lg" className="w-full" disabled={busy}>
+              {busy ? "Отправляем…" : "Прислать ссылку"}
+            </Button>
+          </>
+        )}
+        <button type="button" onClick={() => { setForgot(false); setSent(false); setError(""); }} className="text-sm text-primary hover:underline">
+          ← Назад ко входу
+        </button>
+      </form>
+    );
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -161,13 +208,20 @@ function EmailForm({ onDone }: { onDone: () => void }) {
       <Button type="submit" size="lg" className="w-full" disabled={busy}>
         {busy ? "Секунду…" : mode === "register" ? "Зарегистрироваться" : "Войти"}
       </Button>
-      <button
-        type="button"
-        onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
-        className="text-sm text-primary hover:underline"
-      >
-        {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
-      </button>
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+          className="text-sm text-primary hover:underline"
+        >
+          {mode === "login" ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти"}
+        </button>
+        {mode === "login" && (
+          <button type="button" onClick={() => { setForgot(true); setError(""); }} className="text-sm text-muted-foreground hover:text-foreground">
+            Забыли пароль?
+          </button>
+        )}
+      </div>
     </form>
   );
 }
