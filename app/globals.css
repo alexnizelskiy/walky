@@ -72,13 +72,13 @@
   --ink-900: #1a1b2b;
   --ink-800: #2a2a2a;
 
-  /* Semantic tokens (light) — neutral greys (Figma surface #F3F4F7) */
-  --background: #ffffff;
-  --surface: #f3f4f7;
-  --surface-strong: #e8eaee;
+  /* Semantic tokens (light) — warm cream canvas, white cards float above it. */
+  --background: #fbf8f3;
+  --surface: #f5efe7;
+  --surface-strong: #ece3d7;
   --foreground: #0e0f1e;
-  --muted: #f3f4f7;
-  --muted-foreground: #6e7079;
+  --muted: #f5efe7;
+  --muted-foreground: #7a7368;
   --card: #ffffff;
   --card-foreground: #0e0f1e;
   --popover: #ffffff;
@@ -96,20 +96,21 @@
   --accent: var(--brand-50);
   --accent-foreground: var(--brand-800);
 
-  --border: #e1e1e1;
-  --input: #e1e1e1;
+  --border: #ece3d7;
+  --input: #e4d9ca;
   --ring: var(--brand-500);
 
   --success: #16a34a;
   --warning: #f59e0b;
   --destructive: #e11d48;
 
-  --radius: 1rem;
+  --radius: 1.15rem;
 
-  --shadow-sm: 0 1px 2px 0 rgb(14 15 30 / 0.05);
-  --shadow-md: 0 8px 24px -8px rgb(14 15 30 / 0.12);
-  --shadow-lg: 0 24px 60px -20px rgb(14 15 30 / 0.18);
-  --shadow-brand: 0 18px 40px -14px rgb(250 155 39 / 0.4);
+  /* Soft, large, low-opacity shadows — cards gently float on the cream canvas. */
+  --shadow-sm: 0 1px 2px 0 rgb(70 50 20 / 0.05);
+  --shadow-md: 0 10px 30px -12px rgb(70 50 20 / 0.12);
+  --shadow-lg: 0 30px 70px -28px rgb(70 50 20 / 0.20);
+  --shadow-brand: 0 20px 44px -16px rgb(250 155 39 / 0.38);
 }
 
 .dark {

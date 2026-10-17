@@ -68,11 +68,35 @@ export default function Home() {
 
       {/* Hero */}
       <section className="container-page pt-10 md:pt-16">
-        <p className="flex items-center justify-center gap-2 text-base font-bold text-brand-500">
-          <Star className="size-5 fill-brand-500" /> 4.9 — оценка клиентов
+        <p className="flex items-center justify-center gap-2 text-sm font-semibold text-brand-600">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 shadow-[var(--shadow-sm)]">
+            <Star className="size-4 fill-brand-500 text-brand-500" /> 4.9 — оценка клиентов
+          </span>
         </p>
         <div className="mt-6">
           <HeroRotator />
+        </div>
+        <p className="mx-auto mt-5 max-w-xl text-center text-lg text-muted-foreground">
+          Проверенные выгульщики и ситтеры в Ростове-на-Дону. Фотоотчёт после каждой прогулки и забота о питомце как о своём.
+        </p>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/order"
+            className="inline-flex items-center gap-2 rounded-full bg-brand-500 px-7 py-3.5 text-base font-bold text-white shadow-[var(--shadow-brand)] transition-colors hover:bg-brand-600"
+          >
+            Заказать выгул <ArrowRight className="size-4" />
+          </Link>
+          <Link
+            href="/#how"
+            className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-base font-bold text-foreground shadow-[var(--shadow-sm)] transition-colors hover:bg-surface"
+          >
+            Как это работает
+          </Link>
+        </div>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5"><BadgeCheck className="size-4 text-brand-500" /> Проверенные исполнители</span>
+          <span className="inline-flex items-center gap-1.5"><Camera className="size-4 text-brand-500" /> Фотоотчёт</span>
+          <span className="inline-flex items-center gap-1.5"><ShieldCheck className="size-4 text-brand-500" /> Страховка</span>
         </div>
       </section>
 
