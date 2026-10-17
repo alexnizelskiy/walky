@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Raleway } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { PetHeader } from "@/components/pets/pet-header";
@@ -13,22 +12,16 @@ import { localBusinessJsonLd, websiteJsonLd } from "@/lib/jsonld";
 import { defaultMetadata } from "@/lib/seo";
 import { siteConfig } from "@/lib/site";
 
-// Body text — Raleway (Google, with Cyrillic)
-const raleway = Raleway({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-raleway",
-  display: "swap",
-});
-
-// Headings & nav — Involve (self-hosted, Latin only; Cyrillic falls back to Raleway)
-const involve = localFont({
+// Gilroy — self-hosted geometric sans (display + body), with Cyrillic.
+const gilroy = localFont({
   src: [
-    { path: "./fonts/involve/Involve-Regular.ttf", weight: "400", style: "normal" },
-    { path: "./fonts/involve/Involve-Medium.ttf", weight: "500", style: "normal" },
-    { path: "./fonts/involve/Involve-SemiBold.ttf", weight: "600", style: "normal" },
-    { path: "./fonts/involve/Involve-Bold.ttf", weight: "700", style: "normal" },
+    { path: "./fonts/gilroy/Gilroy-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/gilroy/Gilroy-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/gilroy/Gilroy-Semibold.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/gilroy/Gilroy-Bold.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/gilroy/Gilroy-Extrabold.woff2", weight: "800", style: "normal" },
   ],
-  variable: "--font-involve",
+  variable: "--font-gilroy",
   display: "swap",
 });
 
@@ -46,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${raleway.variable} ${involve.variable}`}
+      className={`${gilroy.variable}`}
       suppressHydrationWarning
     >
       <head>

@@ -195,13 +195,11 @@
   --color-cyan-600: var(--cyan-600);
   --color-cyan-700: var(--cyan-700);
 
-  /* Body — Raleway, with digits mapped to Involve (uniform width, no jump) */
-  --font-sans: "InvolveNum", var(--font-raleway), ui-sans-serif, system-ui,
+  /* Gilroy — display + body (geometric sans, with Cyrillic). */
+  --font-sans: var(--font-gilroy), ui-sans-serif, system-ui,
     -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  /* Headings & nav — Involve (already uniform digits), Raleway Cyrillic fallback */
-  --font-display: var(--font-involve), "InvolveNum", var(--font-raleway),
-    ui-sans-serif, system-ui, sans-serif;
-  --font-logo: var(--font-involve), "InvolveNum", var(--font-raleway), sans-serif;
+  --font-display: var(--font-gilroy), ui-sans-serif, system-ui, sans-serif;
+  --font-logo: var(--font-gilroy), sans-serif;
 
   --radius-sm: calc(var(--radius) - 0.5rem);
   --radius-md: calc(var(--radius) - 0.25rem);
