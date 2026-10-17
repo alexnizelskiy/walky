@@ -46,7 +46,7 @@ export default function ContactsPage() {
               href={c.href}
               target={c.external ? "_blank" : undefined}
               rel={c.external ? "noopener noreferrer" : undefined}
-              className="group flex flex-col rounded-3xl bg-surface p-6 transition-shadow hover:shadow-[0_20px_50px_-20px_rgba(14,15,30,0.25)]"
+              className="group flex flex-col rounded-3xl bg-surface p-6 transition-shadow hover:shadow-[var(--shadow-lg)]"
             >
               <span className="grid size-12 place-items-center rounded-2xl bg-white text-brand-500">
                 <c.icon className="size-6" />

@@ -24,7 +24,7 @@ export function PetHeader() {
   return (
     <header className="sticky top-0 z-50 pt-3 md:pt-4">
       <div className="container-page">
-        <div className="flex h-16 items-center justify-between gap-4 rounded-full bg-white px-4 shadow-[0_10px_40px_-12px_rgba(14,15,30,0.18)] md:pl-6 md:pr-3">
+        <div className="flex h-16 items-center justify-between gap-4 rounded-full bg-white px-4 shadow-[0_12px_40px_-14px_rgba(70,50,20,0.16)] md:pl-6 md:pr-3">
           <Link href="/" aria-label="walky — на главную" className="flex shrink-0 items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/walky-logo.svg" alt="walky" className="h-8 w-auto md:h-9" />
@@ -42,7 +42,7 @@ export function PetHeader() {
               </Link>
               {/* invisible bridge + panel keep it open on hover */}
               <div className="invisible absolute left-1/2 top-full z-10 w-72 -translate-x-1/2 pt-3 opacity-0 transition-all group-hover:visible group-hover:opacity-100">
-                <div className="overflow-hidden rounded-2xl border border-border bg-white p-2 shadow-[0_20px_50px_-20px_rgba(14,15,30,0.3)]">
+                <div className="overflow-hidden rounded-2xl border border-border bg-white p-2 shadow-[var(--shadow-lg)]">
                   {servicePages.map((s) => (
                     <Link
                       key={s.slug}
@@ -117,7 +117,7 @@ export function PetHeader() {
 
         {/* Mobile menu */}
         {open && (
-          <div className="mt-2 overflow-hidden rounded-3xl bg-white p-3 shadow-[0_20px_50px_-20px_rgba(14,15,30,0.3)] lg:hidden">
+          <div className="mt-2 overflow-hidden rounded-3xl bg-white p-3 shadow-[var(--shadow-lg)] lg:hidden">
             <p className="px-2 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Услуги</p>
             {servicePages.map((s) => (
               <Link

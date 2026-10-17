@@ -107,7 +107,7 @@ export default function Home() {
             <Link
               key={s.title}
               href={s.href}
-              className="group flex flex-col overflow-hidden rounded-3xl bg-surface p-6 transition-shadow hover:shadow-[0_20px_50px_-20px_rgba(14,15,30,0.25)]"
+              className="group flex flex-col overflow-hidden rounded-3xl bg-surface p-6 transition-shadow hover:shadow-[var(--shadow-lg)]"
             >
               <span className="w-fit rounded-full bg-white px-3 py-1 text-xs font-semibold text-muted-foreground">{s.badge}</span>
               <h3 className="mt-4 text-2xl font-bold md:text-3xl">{s.title}</h3>
@@ -127,7 +127,7 @@ export default function Home() {
             <Link
               key={s.title}
               href={s.href}
-              className="group flex items-center gap-4 rounded-3xl bg-surface p-5 transition-shadow hover:shadow-[0_20px_50px_-20px_rgba(14,15,30,0.25)]"
+              className="group flex items-center gap-4 rounded-3xl bg-surface p-5 transition-shadow hover:shadow-[var(--shadow-lg)]"
             >
               <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white text-3xl">{s.emoji}</span>
               <div className="min-w-0 flex-1">
