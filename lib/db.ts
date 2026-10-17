@@ -134,6 +134,23 @@ CREATE TABLE IF NOT EXISTS pets (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS pets_user_idx ON pets(user_id);
+-- pet diary / health journal: vaccines, treatments, weight, diary notes
+CREATE TABLE IF NOT EXISTS pet_records (
+  id TEXT PRIMARY KEY,
+  pet_id TEXT NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  title TEXT,
+  value TEXT,
+  event_date DATE,
+  remind_at DATE,
+  notes TEXT,
+  photo_url TEXT,
+  reminded BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS pet_records_pet_idx ON pet_records(pet_id);
+CREATE INDEX IF NOT EXISTS pet_records_remind_idx ON pet_records(remind_at) WHERE remind_at IS NOT NULL;
 -- idempotent migrations for existing databases
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'client';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bonus_balance INT NOT NULL DEFAULT 0;

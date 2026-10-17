@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  PawPrint, Plus, Trash2, Pencil, Check, X, MapPin, CalendarClock, Clock, Stethoscope, ShieldCheck, Repeat,
+  PawPrint, Plus, Trash2, Pencil, Check, X, MapPin, CalendarClock, Clock, Stethoscope, ShieldCheck, Repeat, BookOpen, ArrowRight,
 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
 import { petHasOptions } from "@/lib/pets";
@@ -393,6 +393,16 @@ function PetCard({ pet, onChanged }: { pet: Pet; onChanged: () => void }) {
             </div>
           )}
         </div>
+      )}
+
+      {!editing && (
+        <Link
+          href={`/cabinet/pet/${pet.id}`}
+          className="mt-4 flex items-center justify-between gap-2 rounded-xl bg-surface px-4 py-3 text-sm font-semibold transition-colors hover:bg-surface-strong"
+        >
+          <span className="inline-flex items-center gap-2"><BookOpen className="size-4 text-brand-500" /> Дневник питомца</span>
+          <ArrowRight className="size-4 text-muted-foreground" />
+        </Link>
       )}
 
       {confirmDel && (

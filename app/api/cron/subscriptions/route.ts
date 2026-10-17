@@ -5,6 +5,7 @@ import { listActiveSubscriptions, isDueOn, markSubscriptionRun, scheduleLabel } 
 import { chargeSaved, isConfigured } from "@/lib/yookassa";
 import { notifyOwner } from "@/lib/notify";
 import { sendSms } from "@/lib/sms";
+import { dueReminders, markReminded } from "@/lib/pet-records";
 
 /**
  * Daily job: for every active subscription with a walk due today, create the
@@ -93,7 +94,19 @@ async function run(request: Request) {
     ).catch(() => {});
   }
 
-  return NextResponse.json({ ok: true, date: todayStr, dueCreated: created, charged });
+  // ── Health reminders: vaccines / treatments due (within window) ──
+  let reminders = 0;
+  for (const rem of await dueReminders(todayStr)) {
+    const client = await queryOne<{ phone: string | null }>("SELECT phone FROM users WHERE id = $1", [rem.userId]);
+    const what = rem.kind === "vaccine" ? "прививку" : "обработку";
+    if (client?.phone) {
+      await sendSms(client.phone, `walky: пора сделать ${what} питомцу ${rem.petName}${rem.title ? ` (${rem.title})` : ""}.`).catch(() => {});
+    }
+    await markReminded(rem.id);
+    reminders += 1;
+  }
+
+  return NextResponse.json({ ok: true, date: todayStr, dueCreated: created, charged, reminders });
 }
 
 export async function GET(request: Request) { return run(request); }
